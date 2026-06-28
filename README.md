@@ -9,12 +9,12 @@ Premium mobile-first web app for AI-powered facial aesthetics analysis, personal
 - **TailwindCSS 4**
 - **Framer Motion**
 - **OpenAI GPT-4o Vision**
-- **LocalStorage** (all user data on-device)
-- **Admin cookie auth** (admin panel only)
+- **IndexedDB** (primary on-device storage, LocalStorage fallback)
 
 ## Features
 
-- No user registration or login required
+- No accounts, registration, login, or sessions
+- Opens directly to the Home Dashboard
 - Multi-step onboarding (saved locally)
 - Photo upload with quality validation
 - AI facial & posture analysis (25+ scored metrics)
@@ -24,7 +24,7 @@ Premium mobile-first web app for AI-powered facial aesthetics analysis, personal
 - AI Coach chat (Premium)
 - Challenges
 - Statistics dashboard
-- Admin panel for configuration
+- Fully offline except OpenAI API calls
 
 ## Getting Started
 
@@ -35,35 +35,29 @@ cp .env.example .env
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
-
-Admin panel: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-
-Default admin credentials (set in `.env`):
-- `ADMIN_USERNAME=admin`
-- `ADMIN_PASSWORD=admin123`
+Open [http://localhost:3000](http://localhost:3000) — redirects to `/dashboard`.
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | Vision AI analysis |
-| `ADMIN_USERNAME` | Yes | Admin login username |
-| `ADMIN_PASSWORD` | Yes | Admin login password |
-| `ADMIN_SECRET` | Recommended | Cookie signing secret |
-| `APP_CONFIG` | Optional | JSON premium/free tier config |
+| `OPENAI_API_KEY` | Yes | Vision AI analysis, plans, coach, progress |
 
 ## Data Storage
 
-All user progress is stored in browser **LocalStorage** (`ascend-ai-data`):
-- Photos, analyses, plans, tasks, challenges, settings, chat history
+All user data is stored locally on the device:
 
-Users can export/clear data from Settings. No database required.
+- **IndexedDB** (`ascend-ai-db`) — primary store with automatic backups
+- **LocalStorage** — fallback and legacy migration from `ascend-ai-data`
+
+Stored data includes photos, analyses, plans, tasks, challenges, streaks, workout/nutrition plans, weight history, measurements, settings, theme, notifications, premium state, and AI coach chat.
+
+Data loads instantly on app open. Changes auto-save after every update. Users can export or clear data from Settings.
 
 ## Deployment (Vercel)
 
 1. Push to GitHub and import in Vercel
-2. Set environment variables from `.env.example`
+2. Set `OPENAI_API_KEY`
 3. Deploy — no database setup needed
 
 ## License

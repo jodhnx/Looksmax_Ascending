@@ -5,13 +5,13 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { todayKey } from "@/lib/storage/helpers";
 import { DEFAULT_DAILY_TASKS } from "@/lib/challenges";
 import { startOfDay } from "@/lib/utils";
 
 export default function TasksPage() {
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
   const today = todayKey();
   const dailyTask = data.dailyTasks[today] ?? {
     date: today,

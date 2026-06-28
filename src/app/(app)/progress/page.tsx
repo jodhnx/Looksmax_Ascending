@@ -14,11 +14,11 @@ import {
   type PhotoSlot,
 } from "@/components/app/photo-uploader";
 import { toast } from "sonner";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
 
 export default function ProgressPage() {
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
   const [showUpload, setShowUpload] = useState(false);
   const [photos, setPhotos] = useState<PhotoSlot[]>(DEFAULT_PHOTO_SLOTS.slice(0, 3));
   const [comparing, setComparing] = useState(false);
@@ -79,27 +79,26 @@ export default function ProgressPage() {
 
     const comparison = await res.json();
     const weekNumber = checks.length + 1;
+    const newCheck = {
+      id: generateId(),
+      weekNumber,
+      improvementPercent: comparison.improvementPercent,
+      skinImprovement: comparison.skinImprovement,
+      jawImprovement: comparison.jawImprovement,
+      bodyfatChange: comparison.bodyfatChange,
+      confidenceTrend: comparison.confidenceTrend,
+      notes: comparison.notes,
+      faceComparison: {
+        before: oldPhotos[0]?.url ?? "",
+        after: uploaded[0]?.url ?? "",
+      },
+      createdAt: new Date().toISOString(),
+    };
 
     update((prev) => ({
       ...prev,
-      progressChecks: [
-        {
-          id: generateId(),
-          weekNumber,
-          improvementPercent: comparison.improvementPercent,
-          skinImprovement: comparison.skinImprovement,
-          jawImprovement: comparison.jawImprovement,
-          bodyfatChange: comparison.bodyfatChange,
-          confidenceTrend: comparison.confidenceTrend,
-          notes: comparison.notes,
-          faceComparison: {
-            before: oldPhotos[0]?.url ?? "",
-            after: uploaded[0]?.url ?? "",
-          },
-          createdAt: new Date().toISOString(),
-        },
-        ...prev.progressChecks,
-      ],
+      progressChecks: [newCheck, ...prev.progressChecks],
+      weeklyReports: [newCheck, ...prev.weeklyReports],
     }));
 
     setShowUpload(false);

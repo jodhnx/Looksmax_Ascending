@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 
 const FEATURES = [
   "Unlimited AI photo analyses",
@@ -27,7 +27,7 @@ const FREE_FEATURES = [
 ];
 
 export default function PremiumPage() {
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
 
   const activatePremium = () => {
     update((prev) => ({ ...prev, isPremium: true }));

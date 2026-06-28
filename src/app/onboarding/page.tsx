@@ -16,13 +16,13 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 
 const STEPS = ["Basics", "Body", "Lifestyle", "Face"];
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({

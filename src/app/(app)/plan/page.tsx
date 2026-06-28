@@ -5,11 +5,11 @@ import { Sun, Moon, Dumbbell, Apple, Sparkles } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import type { PlanDay } from "@/lib/openai";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { getCurrentPlanDay } from "@/lib/storage/helpers";
 
 export default function PlanPage() {
-  const { data } = useAppStorage();
+  const { data } = useStorage();
   const currentDay = getCurrentPlanDay(data);
   const plan = data.ascensionPlans[currentDay - 1] as PlanDay | undefined;
 

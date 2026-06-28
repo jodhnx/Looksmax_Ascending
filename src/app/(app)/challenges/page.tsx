@@ -6,12 +6,12 @@ import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CHALLENGE_DEFINITIONS } from "@/lib/challenges";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
 import { toast } from "sonner";
 
 export default function ChallengesPage() {
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
 
   const joinChallenge = (def: (typeof CHALLENGE_DEFINITIONS)[number]) => {
     const existing = data.userChallenges.find((c) => c.challengeType === def.type);

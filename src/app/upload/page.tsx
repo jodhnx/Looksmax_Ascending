@@ -12,13 +12,35 @@ import {
 } from "@/components/app/photo-uploader";
 import { LoadingScreen } from "@/components/app/loading-screen";
 import { toast } from "sonner";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
 import { todayKey } from "@/lib/storage/helpers";
+import { addDays, format } from "date-fns";
+import type { PlanDay } from "@/lib/openai";
+import type { NutritionPlan, WorkoutPlan } from "@/lib/storage/types";
+
+function planToStoredPlans(plan: PlanDay[], planStartDate: string) {
+  const start = new Date(planStartDate);
+  const workoutPlans: WorkoutPlan[] = plan.map((day) => ({
+    id: `${day.dayNumber}-${format(addDays(start, day.dayNumber - 1), "yyyy-MM-dd")}`,
+    date: format(addDays(start, day.dayNumber - 1), "yyyy-MM-dd"),
+    title: day.title,
+    exercises: [...day.exercises, ...day.gym],
+    completed: false,
+  }));
+  const nutritionPlans: NutritionPlan[] = plan.map((day) => ({
+    date: format(addDays(start, day.dayNumber - 1), "yyyy-MM-dd"),
+    protein: day.nutrition.protein,
+    water: day.nutrition.water,
+    calories: day.nutrition.calories,
+    meals: day.habits,
+  }));
+  return { workoutPlans, nutritionPlans };
+}
 
 export default function UploadPage() {
   const router = useRouter();
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
   const [photos, setPhotos] = useState<PhotoSlot[]>(DEFAULT_PHOTO_SLOTS);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -57,6 +79,9 @@ export default function UploadPage() {
     const analysisId = generateId();
     const today = todayKey();
 
+    const planStartDate = new Date().toISOString();
+    const { workoutPlans, nutritionPlans } = planToStoredPlans(plan, planStartDate);
+
     update((prev) => {
       const storedPhotos = uploadedPhotos.map((p) => ({
         id: p.id ?? generateId(),
@@ -74,7 +99,9 @@ export default function UploadPage() {
           { ...result, id: analysisId, photoIds: storedPhotos.map((p) => p.id), createdAt: new Date().toISOString() },
         ],
         ascensionPlans: plan,
-        planStartDate: new Date().toISOString(),
+        planStartDate,
+        workoutPlans,
+        nutritionPlans,
         analysisCount: prev.analysisCount + 1,
         dailyTasks: {
           ...prev.dailyTasks,

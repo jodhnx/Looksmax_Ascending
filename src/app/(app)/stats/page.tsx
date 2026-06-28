@@ -7,10 +7,10 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { formatScore } from "@/lib/utils";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 
 export default function StatsPage() {
-  const { data } = useAppStorage();
+  const { data } = useStorage();
   const stats = data.statistics;
   const latest = stats[stats.length - 1];
   const workouts = stats.filter((s) => s.workoutDone).length;

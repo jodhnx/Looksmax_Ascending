@@ -4,8 +4,10 @@ import {
   generateAscensionPlan,
   type AnalysisResult,
 } from "@/lib/openai";
-import { getRuntimeConfig } from "@/lib/runtime-config";
 import { DEFAULT_DAILY_TASKS } from "@/lib/challenges";
+
+const FREE_ANALYSIS_LIMIT = 1;
+const FREE_PLAN_DAYS = 7;
 
 export async function POST(req: Request) {
   try {
@@ -18,8 +20,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const config = getRuntimeConfig();
-    if (!isPremium && analysisCount >= config.freeAnalysisLimit) {
+    if (!isPremium && analysisCount >= FREE_ANALYSIS_LIMIT) {
       return NextResponse.json(
         { error: "Free tier limited to 1 analysis. Upgrade to Premium." },
         { status: 403 }
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
 
     const result: AnalysisResult = await analyzePhotos(imageUrls, profile);
 
-    const planDays = isPremium ? 30 : config.freePlanDays;
+    const planDays = isPremium ? 30 : FREE_PLAN_DAYS;
     const plan = await generateAscensionPlan(
       result,
       profile ?? {},

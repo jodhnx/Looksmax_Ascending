@@ -6,23 +6,27 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useAppStorage } from "@/hooks/use-app-storage";
-import { DEFAULT_APP_DATA, getAppData, setAppData } from "@/lib/storage";
+import { useSettings } from "@/hooks/use-settings";
+import { useStorage } from "@/hooks/use-storage";
 
 export default function SettingsPage() {
-  const { data, update } = useAppStorage();
-  const prefs = data.notificationPrefs;
+  const { data } = useStorage();
+  const {
+    notificationPrefs: prefs,
+    theme,
+    lastBackupAt,
+    updateNotificationPrefs,
+    setTheme,
+    clearAllData,
+  } = useSettings();
 
   const updatePref = (key: keyof typeof prefs, value: boolean) => {
-    update((prev) => ({
-      ...prev,
-      notificationPrefs: { ...prev.notificationPrefs, [key]: value },
-    }));
+    updateNotificationPrefs({ [key]: value });
     toast.success("Preferences saved");
   };
 
   const exportData = () => {
-    const blob = new Blob([JSON.stringify(getAppData(), null, 2)], {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
@@ -34,10 +38,9 @@ export default function SettingsPage() {
     toast.success("Data exported");
   };
 
-  const clearData = () => {
+  const clearData = async () => {
     if (!confirm("Clear all local data? This cannot be undone.")) return;
-    localStorage.removeItem("ascend-ai-data");
-    setAppData({ ...DEFAULT_APP_DATA });
+    await clearAllData();
     window.location.reload();
   };
 
@@ -54,14 +57,38 @@ export default function SettingsPage() {
     <>
       <div className="px-6 py-8">
         <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="mt-1 text-sm text-white/60">All data is stored locally on your device</p>
+        <p className="mt-1 text-sm text-white/60">
+          All data is stored locally on your device (IndexedDB)
+        </p>
 
         <GlassCard className="mt-6">
+          <h3 className="mb-4 font-semibold text-white">Appearance</h3>
+          <div className="flex gap-2">
+            <Button
+              variant={theme === "dark" ? "default" : "secondary"}
+              size="sm"
+              onClick={() => setTheme("dark")}
+            >
+              Dark
+            </Button>
+            <Button
+              variant={theme === "light" ? "default" : "secondary"}
+              size="sm"
+              onClick={() => setTheme("light")}
+            >
+              Light
+            </Button>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="mt-4">
           <h3 className="mb-4 font-semibold text-white">Notifications</h3>
           <div className="space-y-4">
             {reminders.map((r) => (
               <div key={r.key} className="flex items-center justify-between">
-                <Label htmlFor={r.key} className="text-white/80">{r.label}</Label>
+                <Label htmlFor={r.key} className="text-white/80">
+                  {r.label}
+                </Label>
                 <Switch
                   id={r.key}
                   checked={prefs[r.key]}
@@ -74,6 +101,11 @@ export default function SettingsPage() {
 
         <GlassCard className="mt-4">
           <h3 className="mb-4 font-semibold text-white">Data</h3>
+          {lastBackupAt && (
+            <p className="mb-3 text-xs text-white/50">
+              Last auto-backup: {new Date(lastBackupAt).toLocaleString()}
+            </p>
+          )}
           <div className="space-y-3">
             <Button variant="secondary" className="w-full" onClick={exportData}>
               Export backup

@@ -9,12 +9,12 @@ import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
 import { getCurrentPlanDay } from "@/lib/storage/helpers";
 
 export default function CoachPage() {
-  const { data, update } = useAppStorage();
+  const { data, update } = useStorage();
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);

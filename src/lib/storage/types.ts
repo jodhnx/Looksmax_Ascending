@@ -9,11 +9,14 @@ export type PhotoSlotType =
   | "FULL_BODY_FRONT"
   | "FULL_BODY_SIDE";
 
+export type Theme = "dark" | "light";
+
 export interface StoredPhoto {
   id: string;
   type: PhotoSlotType;
   url: string;
   qualityScore?: number;
+  isProgressPhoto?: boolean;
   createdAt: string;
 }
 
@@ -73,6 +76,8 @@ export interface ProgressCheck {
   createdAt: string;
 }
 
+export type WeeklyReport = ProgressCheck;
+
 export interface UserChallenge {
   id: string;
   challengeType: string;
@@ -96,6 +101,34 @@ export interface Statistic {
   calories?: number;
   proteinGrams?: number;
   steps?: number;
+}
+
+export interface Measurement {
+  id: string;
+  date: string;
+  weightKg?: number;
+  bodyfat?: number;
+  chestCm?: number;
+  waistCm?: number;
+  hipsCm?: number;
+  armsCm?: number;
+  notes?: string;
+}
+
+export interface WorkoutPlan {
+  id: string;
+  date: string;
+  title: string;
+  exercises: string[];
+  completed: boolean;
+}
+
+export interface NutritionPlan {
+  date: string;
+  protein: number;
+  water: number;
+  calories: number;
+  meals: string[];
 }
 
 export interface NotificationPrefs {
@@ -123,12 +156,18 @@ export interface AppData {
   planStartDate: string | null;
   dailyTasks: Record<string, DailyTaskRecord>;
   progressChecks: ProgressCheck[];
+  weeklyReports: WeeklyReport[];
   userChallenges: UserChallenge[];
   statistics: Statistic[];
+  measurements: Measurement[];
+  workoutPlans: WorkoutPlan[];
+  nutritionPlans: NutritionPlan[];
   notificationPrefs: NotificationPrefs;
   messages: ChatMessage[];
   isPremium: boolean;
   analysisCount: number;
+  theme: Theme;
+  lastBackupAt: string | null;
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -149,10 +188,16 @@ export const DEFAULT_APP_DATA: AppData = {
   planStartDate: null,
   dailyTasks: {},
   progressChecks: [],
+  weeklyReports: [],
   userChallenges: [],
   statistics: [],
+  measurements: [],
+  workoutPlans: [],
+  nutritionPlans: [],
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   messages: [],
   isPremium: false,
   analysisCount: 0,
+  theme: "dark",
+  lastBackupAt: null,
 };

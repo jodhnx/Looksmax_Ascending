@@ -9,7 +9,7 @@ import { ScoreRing } from "@/components/app/score-ring";
 import { GlassCard } from "@/components/app/glass-card";
 import { formatScore } from "@/lib/utils";
 import type { AnalysisScores } from "@/lib/openai";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 
 const SCORE_LABELS: Record<keyof AnalysisScores, string> = {
   faceSymmetry: "Face Symmetry",
@@ -44,7 +44,7 @@ const SCORE_LABELS: Record<keyof AnalysisScores, string> = {
 export default function AnalysisPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { data } = useAppStorage();
+  const { data } = useStorage();
 
   const analysis = data.analyses.find((a) => a.id === id);
 

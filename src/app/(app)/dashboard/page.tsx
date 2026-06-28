@@ -17,11 +17,11 @@ import { ScoreRing } from "@/components/app/score-ring";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { getGreeting, getDailyQuote } from "@/lib/utils";
-import { useAppStorage } from "@/hooks/use-app-storage";
+import { useStorage } from "@/hooks/use-storage";
 import { getDashboardFromStorage } from "@/lib/storage/helpers";
 
 export default function DashboardPage() {
-  const { data } = useAppStorage();
+  const { data } = useStorage();
   const dash = getDashboardFromStorage(data);
 
   const taskProgress = dash.dailyTask
