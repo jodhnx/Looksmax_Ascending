@@ -1,48 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Crown } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
-import { LoadingScreen } from "@/components/app/loading-screen";
 import { Button } from "@/components/ui/button";
 import { formatScore } from "@/lib/utils";
-
-interface Stat {
-  date: string;
-  weightKg?: number;
-  bodyfat?: number;
-  faceScore?: number;
-  skinScore?: number;
-  jawScore?: number;
-  sleepHours?: number;
-  waterLiters?: number;
-  workoutDone?: boolean;
-  calories?: number;
-  proteinGrams?: number;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
 
 export default function StatsPage() {
-  const [stats, setStats] = useState<Stat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isPremium, setIsPremium] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/stats?days=30")
-      .then((r) => r.json())
-      .then((data) => {
-        setStats(data.stats ?? []);
-        setLoading(false);
-      });
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d) => setIsPremium(d.isPremium));
-  }, []);
-
-  if (loading) return <LoadingScreen />;
-
+  const { data } = useAppStorage();
+  const stats = data.statistics;
   const latest = stats[stats.length - 1];
   const workouts = stats.filter((s) => s.workoutDone).length;
 
@@ -63,7 +32,7 @@ export default function StatsPage() {
         <h1 className="text-2xl font-bold text-white">Statistics</h1>
         <p className="text-white/60">Track your ascension metrics</p>
 
-        {!isPremium && (
+        {!data.isPremium && (
           <GlassCard className="mt-4 flex items-center gap-3 border-amber-500/20">
             <Crown className="h-6 w-6 text-amber-400" />
             <div className="flex-1">
@@ -86,7 +55,7 @@ export default function StatsPage() {
           ))}
         </div>
 
-        {isPremium && stats.length > 1 && (
+        {data.isPremium && stats.length > 1 && (
           <GlassCard className="mt-6" delay={0.3}>
             <h3 className="mb-4 font-semibold text-white">Face Score Trend</h3>
             <div className="flex h-32 items-end gap-1">

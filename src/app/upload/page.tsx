@@ -12,9 +12,13 @@ import {
 } from "@/components/app/photo-uploader";
 import { LoadingScreen } from "@/components/app/loading-screen";
 import { toast } from "sonner";
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { generateId } from "@/lib/storage";
+import { todayKey } from "@/lib/storage/helpers";
 
 export default function UploadPage() {
   const router = useRouter();
+  const { data, update } = useAppStorage();
   const [photos, setPhotos] = useState<PhotoSlot[]>(DEFAULT_PHOTO_SLOTS);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -28,32 +32,70 @@ export default function UploadPage() {
 
     setAnalyzing(true);
 
-    const photoIds = uploadedPhotos.map((p) => p.id).filter(Boolean);
-
-    if (photoIds.length < 3) {
-      toast.error("Photo upload incomplete");
-      setAnalyzing(false);
-      return;
-    }
+    const imageUrls = uploadedPhotos.map((p) => p.url!);
 
     const res = await fetch("/api/analysis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ photoIds }),
+      body: JSON.stringify({
+        imageUrls,
+        profile: data.profile,
+        isPremium: data.isPremium,
+        analysisCount: data.analysisCount,
+      }),
     });
 
-    setAnalyzing(false);
-
     if (!res.ok) {
-      const data = await res.json();
-      toast.error(data.error || "Analysis failed");
+      const err = await res.json();
+      toast.error(err.error || "Analysis failed");
+      setAnalyzing(false);
       if (res.status === 403) router.push("/premium");
       return;
     }
 
-    const data = await res.json();
+    const { result, plan, tasks } = await res.json();
+    const analysisId = generateId();
+    const today = todayKey();
+
+    update((prev) => {
+      const storedPhotos = uploadedPhotos.map((p) => ({
+        id: p.id ?? generateId(),
+        type: p.type,
+        url: p.url!,
+        qualityScore: p.qualityScore,
+        createdAt: new Date().toISOString(),
+      }));
+
+      return {
+        ...prev,
+        photos: [...prev.photos, ...storedPhotos],
+        analyses: [
+          ...prev.analyses,
+          { ...result, id: analysisId, photoIds: storedPhotos.map((p) => p.id), createdAt: new Date().toISOString() },
+        ],
+        ascensionPlans: plan,
+        planStartDate: new Date().toISOString(),
+        analysisCount: prev.analysisCount + 1,
+        dailyTasks: {
+          ...prev.dailyTasks,
+          [today]: { date: today, tasks, completed: 0, total: tasks.length },
+        },
+        statistics: [
+          ...prev.statistics.filter((s) => s.date !== today),
+          {
+            date: today,
+            faceScore: result.looksScore,
+            skinScore: result.scores.skinQuality,
+            jawScore: result.scores.jawline,
+            bodyfat: result.scores.bodyfatEstimate,
+          },
+        ],
+      };
+    });
+
+    setAnalyzing(false);
     toast.success("Analysis complete!");
-    router.push(`/analysis/${data.analysisId}`);
+    router.push(`/analysis/${analysisId}`);
   };
 
   if (analyzing) {

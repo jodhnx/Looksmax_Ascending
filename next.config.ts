@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client", "bcryptjs", "sharp"],
+  serverExternalPackages: ["sharp"],
   images: {
-    remotePatterns: [],
     unoptimized: true,
   },
   experimental: {

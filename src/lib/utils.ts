@@ -37,23 +37,3 @@ export function startOfDay(date: Date = new Date()): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
-
-export function canUsePremiumFeature(
-  isPremium: boolean,
-  freeAnalysesUsed: number,
-  feature: "analysis" | "chat" | "plan" | "comparison" | "stats"
-): boolean {
-  if (isPremium) return true;
-  switch (feature) {
-    case "analysis":
-      return freeAnalysesUsed < 1;
-    case "plan":
-      return true;
-    case "chat":
-    case "comparison":
-    case "stats":
-      return false;
-    default:
-      return false;
-  }
-}

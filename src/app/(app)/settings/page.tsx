@@ -1,50 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { signOut } from "next-auth/react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { LoadingScreen } from "@/components/app/loading-screen";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
-interface NotificationPrefs {
-  morningReminder: boolean;
-  workoutReminder: boolean;
-  skincareReminder: boolean;
-  waterReminder: boolean;
-  sleepReminder: boolean;
-  weeklyPhoto: boolean;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { DEFAULT_APP_DATA, getAppData, setAppData } from "@/lib/storage";
 
 export default function SettingsPage() {
-  const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, update } = useAppStorage();
+  const prefs = data.notificationPrefs;
 
-  useEffect(() => {
-    fetch("/api/notifications")
-      .then((r) => r.json())
-      .then((data) => {
-        setPrefs(data);
-        setLoading(false);
-      });
-  }, []);
-
-  const updatePref = async (key: keyof NotificationPrefs, value: boolean) => {
-    if (!prefs) return;
-    const updated = { ...prefs, [key]: value };
-    setPrefs(updated);
-    await fetch("/api/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated),
-    });
+  const updatePref = (key: keyof typeof prefs, value: boolean) => {
+    update((prev) => ({
+      ...prev,
+      notificationPrefs: { ...prev.notificationPrefs, [key]: value },
+    }));
     toast.success("Preferences saved");
   };
 
-  if (loading) return <LoadingScreen />;
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(getAppData(), null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ascend-ai-backup-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Data exported");
+  };
+
+  const clearData = () => {
+    if (!confirm("Clear all local data? This cannot be undone.")) return;
+    localStorage.removeItem("ascend-ai-data");
+    setAppData({ ...DEFAULT_APP_DATA });
+    window.location.reload();
+  };
 
   const reminders = [
     { key: "morningReminder" as const, label: "Morning reminder" },
@@ -59,6 +54,7 @@ export default function SettingsPage() {
     <>
       <div className="px-6 py-8">
         <h1 className="text-2xl font-bold text-white">Settings</h1>
+        <p className="mt-1 text-sm text-white/60">All data is stored locally on your device</p>
 
         <GlassCard className="mt-6">
           <h3 className="mb-4 font-semibold text-white">Notifications</h3>
@@ -68,7 +64,7 @@ export default function SettingsPage() {
                 <Label htmlFor={r.key} className="text-white/80">{r.label}</Label>
                 <Switch
                   id={r.key}
-                  checked={prefs?.[r.key] ?? false}
+                  checked={prefs[r.key]}
                   onCheckedChange={(v) => updatePref(r.key, v)}
                 />
               </div>
@@ -76,13 +72,17 @@ export default function SettingsPage() {
           </div>
         </GlassCard>
 
-        <Button
-          variant="destructive"
-          className="mt-8 w-full"
-          onClick={() => signOut({ callbackUrl: "/" })}
-        >
-          Sign Out
-        </Button>
+        <GlassCard className="mt-4">
+          <h3 className="mb-4 font-semibold text-white">Data</h3>
+          <div className="space-y-3">
+            <Button variant="secondary" className="w-full" onClick={exportData}>
+              Export backup
+            </Button>
+            <Button variant="destructive" className="w-full" onClick={clearData}>
+              Clear all local data
+            </Button>
+          </div>
+        </GlassCard>
       </div>
       <BottomNav />
     </>

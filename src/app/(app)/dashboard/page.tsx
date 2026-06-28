@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -17,38 +16,16 @@ import { GlassCard } from "@/components/app/glass-card";
 import { ScoreRing } from "@/components/app/score-ring";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { LoadingScreen } from "@/components/app/loading-screen";
 import { getGreeting, getDailyQuote } from "@/lib/utils";
-
-interface DashboardData {
-  profile: { currentStreak: number; name?: string };
-  latestAnalysis: { looksScore: number } | null;
-  dailyTask: { tasks: Array<{ id: string; label: string; completed: boolean }>; completed: number; total: number } | null;
-  todayStat: { waterLiters?: number; proteinGrams?: number; calories?: number; sleepHours?: number; workoutDone?: boolean } | null;
-  activeChallenge: { challenge: { title: string }; progress: number } | null;
-  weeklyImprovement: number;
-  isPremium: boolean;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { getDashboardFromStorage } from "@/lib/storage/helpers";
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data } = useAppStorage();
+  const dash = getDashboardFromStorage(data);
 
-  useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  if (loading) return <LoadingScreen />;
-  if (!data) return null;
-
-  const taskProgress = data.dailyTask
-    ? (data.dailyTask.completed / data.dailyTask.total) * 100
+  const taskProgress = dash.dailyTask
+    ? (dash.dailyTask.completed / dash.dailyTask.total) * 100
     : 0;
 
   return (
@@ -57,11 +34,11 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-white/60">{getGreeting()}</p>
           <h1 className="text-3xl font-bold text-white">
-            {data.profile?.currentStreak ? "Keep ascending" : "Start ascending"}
+            {dash.profile?.currentStreak ? "Keep ascending" : "Start ascending"}
           </h1>
         </motion.div>
 
-        {!data.isPremium && (
+        {!dash.isPremium && (
           <Link href="/premium">
             <GlassCard className="mt-6 flex items-center gap-3 border-amber-500/20 bg-amber-500/5" delay={0.05}>
               <Crown className="h-8 w-8 text-amber-400" />
@@ -74,8 +51,8 @@ export default function DashboardPage() {
         )}
 
         <GlassCard className="mt-6 flex items-center justify-between" delay={0.1}>
-          {data.latestAnalysis ? (
-            <ScoreRing score={data.latestAnalysis.looksScore} size={100} />
+          {dash.latestAnalysis ? (
+            <ScoreRing score={dash.latestAnalysis.looksScore} size={100} />
           ) : (
             <div className="text-center">
               <p className="text-4xl font-bold text-white/30">—</p>
@@ -86,13 +63,13 @@ export default function DashboardPage() {
             <div>
               <p className="flex items-center justify-end gap-1 text-2xl font-bold text-orange-400">
                 <Flame className="h-5 w-5" />
-                {data.profile?.currentStreak ?? 0}
+                {dash.profile?.currentStreak ?? 0}
               </p>
               <p className="text-xs text-white/60">Day streak</p>
             </div>
             <div>
-              <p className={`text-lg font-bold ${data.weeklyImprovement >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                {data.weeklyImprovement >= 0 ? "+" : ""}{data.weeklyImprovement.toFixed(1)}
+              <p className={`text-lg font-bold ${dash.weeklyImprovement >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {dash.weeklyImprovement >= 0 ? "+" : ""}{dash.weeklyImprovement.toFixed(1)}
               </p>
               <p className="text-xs text-white/60">Weekly score change</p>
             </div>
@@ -106,10 +83,10 @@ export default function DashboardPage() {
           </div>
           <Progress value={taskProgress} className="mb-3" />
           <p className="mb-3 text-sm text-white/60">
-            {data.dailyTask?.completed ?? 0} of {data.dailyTask?.total ?? 0} completed
+            {dash.dailyTask?.completed ?? 0} of {dash.dailyTask?.total ?? 0} completed
           </p>
           <div className="space-y-2">
-            {data.dailyTask?.tasks.slice(0, 4).map((t) => (
+            {dash.dailyTask?.tasks.slice(0, 4).map((t) => (
               <div key={t.id} className="flex items-center gap-2 text-sm">
                 <div className={`h-2 w-2 rounded-full ${t.completed ? "bg-emerald-400" : "bg-white/20"}`} />
                 <span className={t.completed ? "text-white/40 line-through" : "text-white/80"}>
@@ -121,18 +98,18 @@ export default function DashboardPage() {
         </GlassCard>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <StatMini icon={Droplets} label="Water" value={`${data.todayStat?.waterLiters ?? 0}L`} target="3L" delay={0.2} />
-          <StatMini icon={Beef} label="Protein" value={`${data.todayStat?.proteinGrams ?? 0}g`} target="150g" delay={0.22} />
-          <StatMini icon={Moon} label="Sleep" value={`${data.todayStat?.sleepHours ?? 0}h`} target="8h" delay={0.24} />
-          <StatMini icon={Dumbbell} label="Workout" value={data.todayStat?.workoutDone ? "Done" : "Pending"} delay={0.26} />
+          <StatMini icon={Droplets} label="Water" value={`${dash.todayStat?.waterLiters ?? 0}L`} target="3L" delay={0.2} />
+          <StatMini icon={Beef} label="Protein" value={`${dash.todayStat?.proteinGrams ?? 0}g`} target="150g" delay={0.22} />
+          <StatMini icon={Moon} label="Sleep" value={`${dash.todayStat?.sleepHours ?? 0}h`} target="8h" delay={0.24} />
+          <StatMini icon={Dumbbell} label="Workout" value={dash.todayStat?.workoutDone ? "Done" : "Pending"} delay={0.26} />
         </div>
 
-        {data.activeChallenge && (
+        {dash.activeChallenge && (
           <Link href="/challenges">
             <GlassCard className="mt-4" delay={0.3}>
-            <h3 className="font-semibold text-white">Active Challenge</h3>
-            <p className="mt-1 text-sm text-violet-400">{data.activeChallenge.challenge.title}</p>
-            <Progress value={data.activeChallenge.progress} className="mt-3" />
+              <h3 className="font-semibold text-white">Active Challenge</h3>
+              <p className="mt-1 text-sm text-violet-400">{dash.activeChallenge.title}</p>
+              <Progress value={dash.activeChallenge.progress} className="mt-3" />
             </GlassCard>
           </Link>
         )}
@@ -145,9 +122,9 @@ export default function DashboardPage() {
           <p className="text-sm text-white/70">&ldquo;{getDailyQuote()}&rdquo;</p>
         </GlassCard>
 
-        {!data.latestAnalysis && (
+        {!dash.latestAnalysis && (
           <Button asChild className="mt-6 w-full" size="lg">
-            <Link href="/upload">
+            <Link href={data.onboardingComplete ? "/upload" : "/onboarding"}>
               <Camera className="h-5 w-5" /> Start First Analysis
             </Link>
           </Button>

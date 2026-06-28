@@ -1,12 +1,11 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <>
       <ServiceWorkerRegister />
       {children}
       <Toaster
@@ -20,6 +19,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }}
       />
-    </SessionProvider>
+    </>
   );
 }

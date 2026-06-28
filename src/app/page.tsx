@@ -1,16 +1,8 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Camera, Brain, TrendingUp, Shield } from "lucide-react";
 
-export default async function LandingPage() {
-  const session = await auth();
-  if (session?.user) {
-    if (!session.user.onboardingComplete) redirect("/onboarding");
-    redirect("/dashboard");
-  }
-
+export default function LandingPage() {
   const features = [
     {
       icon: Camera,
@@ -29,8 +21,8 @@ export default async function LandingPage() {
     },
     {
       icon: Shield,
-      title: "Private & Secure",
-      desc: "Your photos and data are encrypted and never shared.",
+      title: "Private & Local",
+      desc: "Your data stays on your device. No account required.",
     },
   ];
 
@@ -47,8 +39,7 @@ export default async function LandingPage() {
             ASCEND <span className="gradient-text">AI</span>
           </h1>
           <p className="mt-3 text-lg text-white/60">
-            Your premium AI-powered ascension companion. Analyze, plan, and
-            transform.
+            Your premium AI-powered ascension companion. No login required.
           </p>
         </div>
 
@@ -71,15 +62,15 @@ export default async function LandingPage() {
 
         <div className="space-y-3">
           <Button asChild size="lg" className="w-full">
-            <Link href="/auth/signup">Start Your Ascension</Link>
+            <Link href="/onboarding">Start Your Ascension</Link>
           </Button>
           <Button asChild variant="secondary" size="lg" className="w-full">
-            <Link href="/auth/signin">Sign In</Link>
+            <Link href="/dashboard">Open Dashboard</Link>
           </Button>
         </div>
 
         <p className="mt-8 text-center text-xs text-white/40">
-          Free analysis included · Premium from $14.99/mo
+          Progress saved locally on your device · Premium from $14.99/mo
         </p>
       </div>
     </div>

@@ -1,53 +1,65 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { LoadingScreen } from "@/components/app/loading-screen";
-
-interface Task {
-  id: string;
-  label: string;
-  completed: boolean;
-  category?: string;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { todayKey } from "@/lib/storage/helpers";
+import { DEFAULT_DAILY_TASKS } from "@/lib/challenges";
+import { startOfDay } from "@/lib/utils";
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [completed, setCompleted] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/tasks")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.dailyTask) {
-          setTasks(data.dailyTask.tasks);
-          setCompleted(data.dailyTask.completed);
-          setTotal(data.dailyTask.total);
-        }
-        setLoading(false);
-      });
-  }, []);
-
-  const toggle = async (taskId: string, checked: boolean) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, completed: checked } : t))
-    );
-    setCompleted((c) => c + (checked ? 1 : -1));
-
-    await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ taskId, completed: checked }),
-    });
+  const { data, update } = useAppStorage();
+  const today = todayKey();
+  const dailyTask = data.dailyTasks[today] ?? {
+    date: today,
+    tasks: DEFAULT_DAILY_TASKS.map((t) => ({ ...t, completed: false })),
+    completed: 0,
+    total: DEFAULT_DAILY_TASKS.length,
   };
 
-  if (loading) return <LoadingScreen />;
+  const toggle = (taskId: string, checked: boolean) => {
+    update((prev) => {
+      const current = prev.dailyTasks[today] ?? dailyTask;
+      const tasks = current.tasks.map((t) =>
+        t.id === taskId ? { ...t, completed: checked } : t
+      );
+      const completedCount = tasks.filter((t) => t.completed).length;
+      const allDone = completedCount === tasks.length;
+
+      let profile = prev.profile;
+      if (allDone && profile) {
+        const todayDate = startOfDay();
+        const yesterday = new Date(todayDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const lastActive = profile.lastActiveDate
+          ? startOfDay(new Date(profile.lastActiveDate))
+          : null;
+        const isConsecutive =
+          lastActive && lastActive.getTime() === yesterday.getTime();
+        profile = {
+          ...profile,
+          currentStreak: isConsecutive ? profile.currentStreak + 1 : 1,
+          longestStreak: Math.max(
+            profile.longestStreak,
+            isConsecutive ? profile.currentStreak + 1 : 1
+          ),
+          lastActiveDate: todayDate.toISOString(),
+        };
+      }
+
+      return {
+        ...prev,
+        profile,
+        dailyTasks: {
+          ...prev.dailyTasks,
+          [today]: { ...current, tasks, completed: completedCount, total: tasks.length },
+        },
+      };
+    });
+  };
 
   return (
     <>
@@ -58,13 +70,13 @@ export default function TasksPage() {
         <GlassCard className="mt-6">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm text-white/60">Progress</span>
-            <span className="font-semibold text-white">{completed}/{total}</span>
+            <span className="font-semibold text-white">{dailyTask.completed}/{dailyTask.total}</span>
           </div>
-          <Progress value={total ? (completed / total) * 100 : 0} />
+          <Progress value={dailyTask.total ? (dailyTask.completed / dailyTask.total) * 100 : 0} />
         </GlassCard>
 
         <div className="mt-4 space-y-2">
-          {tasks.map((task, i) => (
+          {dailyTask.tasks.map((task, i) => (
             <motion.div
               key={task.id}
               initial={{ opacity: 0, x: -10 }}

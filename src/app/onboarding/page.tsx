@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,43 +16,44 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { useAppStorage } from "@/hooks/use-app-storage";
 
 const STEPS = ["Basics", "Body", "Lifestyle", "Face"];
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { update: updateSession } = useSession();
+  const { data, update } = useAppStorage();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    age: "",
-    heightCm: "",
-    weightKg: "",
-    gender: "",
-    goal: "",
-    bodyfatEstimate: "",
-    gymExperience: "",
-    sleepHours: "",
-    waterIntakeL: "",
-    skincare: "",
-    hairType: "",
-    beardGrowth: "",
-    jawVisibility: "",
-    teethCondition: "",
-    eyeArea: "",
-    acne: "",
-    faceSymmetry: "",
+    age: data.profile?.age?.toString() ?? "",
+    heightCm: data.profile?.heightCm?.toString() ?? "",
+    weightKg: data.profile?.weightKg?.toString() ?? "",
+    gender: data.profile?.gender ?? "",
+    goal: data.profile?.goal ?? "",
+    bodyfatEstimate: data.profile?.bodyfatEstimate?.toString() ?? "",
+    gymExperience: data.profile?.gymExperience ?? "",
+    sleepHours: data.profile?.sleepHours?.toString() ?? "",
+    waterIntakeL: data.profile?.waterIntakeL?.toString() ?? "",
+    skincare: data.profile?.skincare ?? "",
+    hairType: data.profile?.hairType ?? "",
+    beardGrowth: data.profile?.beardGrowth ?? "",
+    jawVisibility: data.profile?.jawVisibility ?? "",
+    teethCondition: data.profile?.teethCondition ?? "",
+    eyeArea: data.profile?.eyeArea ?? "",
+    acne: data.profile?.acne ?? "",
+    faceSymmetry: data.profile?.faceSymmetry ?? "",
   });
 
-  const update = (key: string, value: string) =>
+  const updateField = (key: string, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const submit = async () => {
+  const submit = () => {
     setLoading(true);
-    const res = await fetch("/api/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    update((prev) => ({
+      ...prev,
+      onboardingComplete: true,
+      profile: {
         age: Number(form.age),
         heightCm: Number(form.heightCm),
         weightKg: Number(form.weightKg),
@@ -71,21 +71,14 @@ export default function OnboardingPage() {
         eyeArea: form.eyeArea,
         acne: form.acne,
         faceSymmetry: form.faceSymmetry,
-      }),
-    });
-    setLoading(false);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      toast.error(data.error || "Failed to save profile");
-      setLoading(false);
-      return;
-    }
-
-    await updateSession({ onboardingComplete: true });
-
+        currentStreak: prev.profile?.currentStreak ?? 0,
+        longestStreak: prev.profile?.longestStreak ?? 0,
+        lastActiveDate: prev.profile?.lastActiveDate ?? null,
+      },
+    }));
+    toast.success("Profile saved");
     router.push("/upload");
-    router.refresh();
+    setLoading(false);
   };
 
   const next = () => {
@@ -116,35 +109,35 @@ export default function OnboardingPage() {
           >
             {step === 0 && (
               <>
-                <Field label="Age" id="age" type="number" value={form.age} onChange={update} />
-                <Field label="Height (cm)" id="heightCm" type="number" value={form.heightCm} onChange={update} />
-                <Field label="Weight (kg)" id="weightKg" type="number" value={form.weightKg} onChange={update} />
-                <SelectField label="Gender" value={form.gender} onChange={(v) => update("gender", v)} options={["Male", "Female", "Other"]} />
-                <SelectField label="Primary Goal" value={form.goal} onChange={(v) => update("goal", v)} options={["Face aesthetics", "Body recomposition", "Overall glow up", "Confidence", "All of the above"]} />
+                <Field label="Age" id="age" type="number" value={form.age} onChange={updateField} />
+                <Field label="Height (cm)" id="heightCm" type="number" value={form.heightCm} onChange={updateField} />
+                <Field label="Weight (kg)" id="weightKg" type="number" value={form.weightKg} onChange={updateField} />
+                <SelectField label="Gender" value={form.gender} onChange={(v) => updateField("gender", v)} options={["Male", "Female", "Other"]} />
+                <SelectField label="Primary Goal" value={form.goal} onChange={(v) => updateField("goal", v)} options={["Face aesthetics", "Body recomposition", "Overall glow up", "Confidence", "All of the above"]} />
               </>
             )}
             {step === 1 && (
               <>
-                <Field label="Bodyfat Estimate (%)" id="bodyfatEstimate" type="number" value={form.bodyfatEstimate} onChange={update} />
-                <SelectField label="Gym Experience" value={form.gymExperience} onChange={(v) => update("gymExperience", v)} options={["Beginner", "Intermediate", "Advanced", "None"]} />
-                <Field label="Sleep (hours/night)" id="sleepHours" type="number" value={form.sleepHours} onChange={update} />
-                <Field label="Water Intake (L/day)" id="waterIntakeL" type="number" value={form.waterIntakeL} onChange={update} />
+                <Field label="Bodyfat Estimate (%)" id="bodyfatEstimate" type="number" value={form.bodyfatEstimate} onChange={updateField} />
+                <SelectField label="Gym Experience" value={form.gymExperience} onChange={(v) => updateField("gymExperience", v)} options={["Beginner", "Intermediate", "Advanced", "None"]} />
+                <Field label="Sleep (hours/night)" id="sleepHours" type="number" value={form.sleepHours} onChange={updateField} />
+                <Field label="Water Intake (L/day)" id="waterIntakeL" type="number" value={form.waterIntakeL} onChange={updateField} />
               </>
             )}
             {step === 2 && (
               <>
-                <SelectField label="Current Skincare" value={form.skincare} onChange={(v) => update("skincare", v)} options={["None", "Basic", "Advanced routine", "Dermatologist prescribed"]} />
-                <SelectField label="Hair Type" value={form.hairType} onChange={(v) => update("hairType", v)} options={["Straight", "Wavy", "Curly", "Coily", "Thinning", "Bald/shaved"]} />
-                <SelectField label="Beard Growth" value={form.beardGrowth} onChange={(v) => update("beardGrowth", v)} options={["None", "Patchy", "Moderate", "Full", "N/A"]} />
+                <SelectField label="Current Skincare" value={form.skincare} onChange={(v) => updateField("skincare", v)} options={["None", "Basic", "Advanced routine", "Dermatologist prescribed"]} />
+                <SelectField label="Hair Type" value={form.hairType} onChange={(v) => updateField("hairType", v)} options={["Straight", "Wavy", "Curly", "Coily", "Thinning", "Bald/shaved"]} />
+                <SelectField label="Beard Growth" value={form.beardGrowth} onChange={(v) => updateField("beardGrowth", v)} options={["None", "Patchy", "Moderate", "Full", "N/A"]} />
               </>
             )}
             {step === 3 && (
               <>
-                <SelectField label="Jaw Visibility" value={form.jawVisibility} onChange={(v) => update("jawVisibility", v)} options={["Hidden by fat", "Slightly visible", "Defined", "Very defined"]} />
-                <SelectField label="Teeth Condition" value={form.teethCondition} onChange={(v) => update("teethCondition", v)} options={["Excellent", "Good", "Average", "Needs work"]} />
-                <SelectField label="Eye Area" value={form.eyeArea} onChange={(v) => update("eyeArea", v)} options={["Hunter eyes", "Average", "Tired/droopy", "Deep set", "Hooded"]} />
-                <SelectField label="Acne" value={form.acne} onChange={(v) => update("acne", v)} options={["None", "Mild", "Moderate", "Severe"]} />
-                <SelectField label="Face Symmetry (self-assess)" value={form.faceSymmetry} onChange={(v) => update("faceSymmetry", v)} options={["Very symmetric", "Slightly asymmetric", "Noticeably asymmetric", "Unsure"]} />
+                <SelectField label="Jaw Visibility" value={form.jawVisibility} onChange={(v) => updateField("jawVisibility", v)} options={["Hidden by fat", "Slightly visible", "Defined", "Very defined"]} />
+                <SelectField label="Teeth Condition" value={form.teethCondition} onChange={(v) => updateField("teethCondition", v)} options={["Excellent", "Good", "Average", "Needs work"]} />
+                <SelectField label="Eye Area" value={form.eyeArea} onChange={(v) => updateField("eyeArea", v)} options={["Hunter eyes", "Average", "Tired/droopy", "Deep set", "Hooded"]} />
+                <SelectField label="Acne" value={form.acne} onChange={(v) => updateField("acne", v)} options={["None", "Mild", "Moderate", "Severe"]} />
+                <SelectField label="Face Symmetry (self-assess)" value={form.faceSymmetry} onChange={(v) => updateField("faceSymmetry", v)} options={["Very symmetric", "Slightly asymmetric", "Noticeably asymmetric", "Unsure"]} />
               </>
             )}
           </motion.div>

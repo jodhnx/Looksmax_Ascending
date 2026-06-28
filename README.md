@@ -7,112 +7,64 @@ Premium mobile-first web app for AI-powered facial aesthetics analysis, personal
 - **Next.js 15** (App Router)
 - **TypeScript**
 - **TailwindCSS 4**
-- **Shadcn-style UI** (Radix primitives)
 - **Framer Motion**
-- **Prisma 7** + **PostgreSQL**
-- **NextAuth v5**
 - **OpenAI GPT-4o Vision**
-- **Stripe** subscriptions
-- **Vercel** deployment ready
+- **LocalStorage** (all user data on-device)
+- **Admin cookie auth** (admin panel only)
 
 ## Features
 
-- Multi-step onboarding (body, lifestyle, face metrics)
-- Photo upload with quality validation (lighting, resolution, compression)
+- No user registration or login required
+- Multi-step onboarding (saved locally)
+- Photo upload with quality validation
 - AI facial & posture analysis (25+ scored metrics)
 - Personalized 30-day Ascension Plan
 - Daily checklist with streak tracking
 - Weekly progress comparisons (Premium)
 - AI Coach chat (Premium)
-- Challenges (30 Day Glow Up, 75 Hard Lite, etc.)
+- Challenges
 - Statistics dashboard
-- Stripe Premium subscriptions ($14.99/mo)
-- Notification preferences
-- Glassmorphism dark UI with bottom navigation
+- Admin panel for configuration
 
 ## Getting Started
 
-### 1. Install dependencies
-
 ```bash
 npm install
-```
-
-### 2. Configure environment
-
-Copy `.env.example` to `.env` and fill in:
-
-```bash
 cp .env.example .env
-```
-
-Required:
-- `DATABASE_URL` — PostgreSQL connection string
-- `AUTH_SECRET` or `NEXTAUTH_SECRET` — `openssl rand -base64 32`
-- `NEXTAUTH_URL` — `http://localhost:3000`
-- `OPENAI_API_KEY` — for Vision AI analysis
-
-For Premium billing:
-- `STRIPE_SECRET_KEY`
-- `STRIPE_PREMIUM_PRICE_ID`
-- `STRIPE_WEBHOOK_SECRET`
-
-### 3. Set up database
-
-```bash
-npx prisma migrate deploy
-```
-
-Or for development:
-
-```bash
-npm run db:migrate
-```
-
-### 4. Run development server
-
-```bash
+# Add OPENAI_API_KEY
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
+Admin panel: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
+Default admin credentials (set in `.env`):
+- `ADMIN_USERNAME=admin`
+- `ADMIN_PASSWORD=admin123`
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Yes | Vision AI analysis |
+| `ADMIN_USERNAME` | Yes | Admin login username |
+| `ADMIN_PASSWORD` | Yes | Admin login password |
+| `ADMIN_SECRET` | Recommended | Cookie signing secret |
+| `APP_CONFIG` | Optional | JSON premium/free tier config |
+
+## Data Storage
+
+All user progress is stored in browser **LocalStorage** (`ascend-ai-data`):
+- Photos, analyses, plans, tasks, challenges, settings, chat history
+
+Users can export/clear data from Settings. No database required.
+
 ## Deployment (Vercel)
 
-1. Push to GitHub
-2. Import project in Vercel
-3. Add environment variables from `.env.example`
-4. Use [Vercel Postgres](https://vercel.com/storage/postgres) or [Neon](https://neon.tech) for `DATABASE_URL`
-5. Run `npx prisma db push` against production DB
-6. Configure Stripe webhook: `https://yourdomain.com/api/stripe/webhook`
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── (app)/          # Authenticated app pages
-│   ├── api/            # API routes
-│   ├── auth/           # Sign in / sign up
-│   ├── onboarding/     # Profile setup
-│   ├── upload/         # Photo upload & analysis
-│   └── analysis/       # Results report
-├── components/
-│   ├── app/            # App-specific components
-│   └── ui/             # Reusable UI primitives
-├── lib/                # Auth, Prisma, OpenAI, Stripe, utils
-└── generated/prisma/   # Prisma client (auto-generated)
-```
-
-## Free vs Premium
-
-| Feature | Free | Premium |
-|---------|------|---------|
-| AI Analysis | 1 | Unlimited |
-| Ascension Plan | 7 days | 30 days |
-| AI Coach | — | ✓ |
-| Weekly Comparisons | — | ✓ |
-| Advanced Stats | — | ✓ |
+1. Push to GitHub and import in Vercel
+2. Set environment variables from `.env.example`
+3. Deploy — no database setup needed
 
 ## License
 

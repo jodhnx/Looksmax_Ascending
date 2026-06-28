@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Send, Crown, Bot } from "lucide-react";
@@ -8,78 +8,19 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoadingScreen } from "@/components/app/loading-screen";
 import { toast } from "sonner";
-
-interface Message {
-  id: string;
-  role: string;
-  content: string;
-  createdAt: string;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { generateId } from "@/lib/storage";
+import { getCurrentPlanDay } from "@/lib/storage/helpers";
 
 export default function CoachPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { data, update } = useAppStorage();
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [premiumRequired, setPremiumRequired] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messages = data.messages;
 
-  useEffect(() => {
-    fetch("/api/chat")
-      .then((r) => {
-        if (r.status === 403) {
-          setPremiumRequired(true);
-          setLoading(false);
-          return null;
-        }
-        return r.json();
-      })
-      .then((data) => {
-        if (data) setMessages(data);
-        setLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const send = async () => {
-    if (!input.trim() || sending) return;
-    const content = input.trim();
-    setInput("");
-    setSending(true);
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-
-    setSending(false);
-
-    if (!res.ok) {
-      toast.error("Failed to send message");
-      return;
-    }
-
-    const reply = await res.json();
-    setMessages((prev) => [...prev, reply]);
-  };
-
-  if (loading) return <LoadingScreen />;
-
-  if (premiumRequired) {
+  if (!data.isPremium) {
     return (
       <>
         <div className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
@@ -96,6 +37,68 @@ export default function CoachPage() {
       </>
     );
   }
+
+  const send = async () => {
+    if (!input.trim() || sending) return;
+    const content = input.trim();
+    setInput("");
+    setSending(true);
+
+    const userMsg = {
+      id: generateId(),
+      role: "user" as const,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    update((prev) => ({
+      ...prev,
+      messages: [...prev.messages, userMsg],
+    }));
+
+    const history = [...messages, userMsg].map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: history,
+        isPremium: data.isPremium,
+        userContext: {
+          profile: data.profile,
+          latestAnalysis: data.analyses[data.analyses.length - 1],
+          stats: data.statistics.slice(-7),
+          currentPlan: data.ascensionPlans[getCurrentPlanDay(data) - 1],
+        },
+      }),
+    });
+
+    setSending(false);
+
+    if (!res.ok) {
+      toast.error("Failed to send message");
+      return;
+    }
+
+    const { content: reply } = await res.json();
+    update((prev) => ({
+      ...prev,
+      messages: [
+        ...prev.messages,
+        {
+          id: generateId(),
+          role: "assistant" as const,
+          content: reply,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  };
 
   return (
     <>

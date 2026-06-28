@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Check, Crown, Sparkles } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAppStorage } from "@/hooks/use-app-storage";
 
 const FEATURES = [
   "Unlimited AI photo analyses",
@@ -28,30 +27,11 @@ const FREE_FEATURES = [
 ];
 
 export default function PremiumPage() {
-  const searchParams = useSearchParams();
-  const [isPremium, setIsPremium] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { data, update } = useAppStorage();
 
-  useEffect(() => {
-    if (searchParams.get("success")) {
-      toast.success("Welcome to Premium!");
-    }
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d) => setIsPremium(d.isPremium));
-  }, [searchParams]);
-
-  const checkout = async () => {
-    setLoading(true);
-    const res = await fetch("/api/stripe/checkout", { method: "POST" });
-    const data = await res.json();
-    setLoading(false);
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      toast.error("Checkout unavailable. Configure Stripe keys.");
-    }
+  const activatePremium = () => {
+    update((prev) => ({ ...prev, isPremium: true }));
+    toast.success("Premium activated! (stored locally)");
   };
 
   return (
@@ -70,11 +50,11 @@ export default function PremiumPage() {
           <p className="mt-4 text-4xl font-bold gradient-text">$14.99<span className="text-lg text-white/60">/mo</span></p>
         </motion.div>
 
-        {isPremium ? (
+        {data.isPremium ? (
           <GlassCard className="mt-8 text-center">
             <Sparkles className="mx-auto mb-3 h-8 w-8 text-amber-400" />
             <h3 className="font-semibold text-white">You&apos;re Premium!</h3>
-            <p className="mt-2 text-sm text-white/60">All features unlocked</p>
+            <p className="mt-2 text-sm text-white/60">All features unlocked on this device</p>
           </GlassCard>
         ) : (
           <>
@@ -105,11 +85,13 @@ export default function PremiumPage() {
             <Button
               className="mt-8 w-full bg-gradient-to-r from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25 hover:from-amber-400 hover:to-orange-500"
               size="lg"
-              onClick={checkout}
-              disabled={loading}
+              onClick={activatePremium}
             >
-              {loading ? "Loading..." : "Upgrade to Premium"}
+              Activate Premium (Demo)
             </Button>
+            <p className="mt-3 text-center text-xs text-white/40">
+              Premium status is saved locally on your device
+            </p>
           </>
         )}
       </div>

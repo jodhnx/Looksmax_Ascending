@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -8,20 +7,9 @@ import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoreRing } from "@/components/app/score-ring";
 import { GlassCard } from "@/components/app/glass-card";
-import { LoadingScreen } from "@/components/app/loading-screen";
 import { formatScore } from "@/lib/utils";
 import type { AnalysisScores } from "@/lib/openai";
-
-interface Analysis {
-  id: string;
-  looksScore: number;
-  confidenceScore: number;
-  improvementPotential: number;
-  scores: AnalysisScores;
-  strengths: string[];
-  weaknesses: string[];
-  summary: string;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
 
 const SCORE_LABELS: Record<keyof AnalysisScores, string> = {
   faceSymmetry: "Face Symmetry",
@@ -56,21 +44,20 @@ const SCORE_LABELS: Record<keyof AnalysisScores, string> = {
 export default function AnalysisPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data } = useAppStorage();
 
-  useEffect(() => {
-    fetch(`/api/analysis/${id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setAnalysis(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [id]);
+  const analysis = data.analyses.find((a) => a.id === id);
 
-  if (loading) return <LoadingScreen message="Loading your report..." />;
-  if (!analysis) return <div className="p-8 text-white">Analysis not found</div>;
+  if (!analysis) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] p-8 text-center text-white">
+        <p>Analysis not found</p>
+        <Button asChild className="mt-4">
+          <Link href="/dashboard">Back to Dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
 
   const sortedScores = Object.entries(analysis.scores).sort(
     ([, a], [, b]) => b - a

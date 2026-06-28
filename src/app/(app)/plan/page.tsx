@@ -1,33 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sun, Moon, Dumbbell, Apple, Sparkles } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
-import { LoadingScreen } from "@/components/app/loading-screen";
 import type { PlanDay } from "@/lib/openai";
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { getCurrentPlanDay } from "@/lib/storage/helpers";
 
 export default function PlanPage() {
-  const [plan, setPlan] = useState<PlanDay | null>(null);
-  const [currentDay, setCurrentDay] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const { data } = useAppStorage();
+  const currentDay = getCurrentPlanDay(data);
+  const plan = data.ascensionPlans[currentDay - 1] as PlanDay | undefined;
 
-  useEffect(() => {
-    fetch("/api/tasks")
-      .then((r) => r.json())
-      .then((data) => {
-        setCurrentDay(data.currentDay ?? 1);
-        if (data.todayPlan?.tasks) {
-          setPlan(data.todayPlan.tasks as PlanDay);
-        }
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <LoadingScreen />;
-
-  if (!plan) {
+  if (!plan || !data.ascensionPlans.length) {
     return (
       <>
         <div className="px-6 py-8 text-center">

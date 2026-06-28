@@ -56,10 +56,9 @@ export function PhotoUploader({
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("type", type);
 
       try {
-        const res = await fetch("/api/photos/upload", {
+        const res = await fetch("/api/image/validate", {
           method: "POST",
           body: formData,
         });
@@ -81,7 +80,7 @@ export function PhotoUploader({
             p.type === type
               ? {
                   ...p,
-                  id: data.id,
+                  id: crypto.randomUUID(),
                   url: data.url,
                   qualityScore: data.qualityScore,
                   uploading: false,

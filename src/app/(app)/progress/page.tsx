@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { TrendingUp, Camera, Crown } from "lucide-react";
@@ -8,84 +8,23 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { ComparisonSlider } from "@/components/app/comparison-slider";
 import { Button } from "@/components/ui/button";
-import { LoadingScreen } from "@/components/app/loading-screen";
 import {
   PhotoUploader,
   DEFAULT_PHOTO_SLOTS,
   type PhotoSlot,
 } from "@/components/app/photo-uploader";
 import { toast } from "sonner";
-
-interface ProgressCheck {
-  id: string;
-  weekNumber: number;
-  improvementPercent: number;
-  skinImprovement: number;
-  jawImprovement: number;
-  bodyfatChange: number;
-  confidenceTrend: number;
-  notes: string;
-  faceComparison: { before: string; after: string };
-  createdAt: string;
-}
+import { useAppStorage } from "@/hooks/use-app-storage";
+import { generateId } from "@/lib/storage";
 
 export default function ProgressPage() {
-  const [checks, setChecks] = useState<ProgressCheck[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [premiumRequired, setPremiumRequired] = useState(false);
+  const { data, update } = useAppStorage();
   const [showUpload, setShowUpload] = useState(false);
   const [photos, setPhotos] = useState<PhotoSlot[]>(DEFAULT_PHOTO_SLOTS.slice(0, 3));
   const [comparing, setComparing] = useState(false);
+  const checks = data.progressChecks;
 
-  useEffect(() => {
-    fetch("/api/progress")
-      .then((r) => {
-        if (r.status === 403) {
-          setPremiumRequired(true);
-          setLoading(false);
-          return null;
-        }
-        return r.json();
-      })
-      .then((data) => {
-        if (data) setChecks(data);
-        setLoading(false);
-      });
-  }, []);
-
-  const runComparison = async () => {
-    const uploaded = photos.filter((p) => p.url);
-    if (uploaded.length < 3) {
-      toast.error("Upload at least 3 new photos");
-      return;
-    }
-
-    setComparing(true);
-
-    const photoIds = uploaded.map((p) => p.id).filter(Boolean);
-
-    const res = await fetch("/api/progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ photoIds }),
-    });
-
-    setComparing(false);
-
-    if (!res.ok) {
-      toast.error("Comparison failed");
-      return;
-    }
-
-    const check = await res.json();
-    setChecks((prev) => [check, ...prev]);
-    setShowUpload(false);
-    toast.success("Weekly comparison complete!");
-  };
-
-  if (loading) return <LoadingScreen />;
-
-  if (premiumRequired) {
+  if (!data.isPremium) {
     return (
       <>
         <div className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
@@ -100,6 +39,72 @@ export default function ProgressPage() {
       </>
     );
   }
+
+  const runComparison = async () => {
+    const uploaded = photos.filter((p) => p.url);
+    if (uploaded.length < 1) {
+      toast.error("Upload at least 1 new photo");
+      return;
+    }
+
+    const previousAnalysis = data.analyses[data.analyses.length - 1];
+    if (!previousAnalysis) {
+      toast.error("No previous analysis to compare");
+      return;
+    }
+
+    const oldPhotos = data.photos.filter((p) =>
+      previousAnalysis.photoIds.includes(p.id)
+    );
+
+    setComparing(true);
+
+    const res = await fetch("/api/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oldImageUrls: oldPhotos.map((p) => p.url),
+        newImageUrls: uploaded.map((p) => p.url),
+        previousScores: previousAnalysis.scores,
+        isPremium: data.isPremium,
+      }),
+    });
+
+    setComparing(false);
+
+    if (!res.ok) {
+      toast.error("Comparison failed");
+      return;
+    }
+
+    const comparison = await res.json();
+    const weekNumber = checks.length + 1;
+
+    update((prev) => ({
+      ...prev,
+      progressChecks: [
+        {
+          id: generateId(),
+          weekNumber,
+          improvementPercent: comparison.improvementPercent,
+          skinImprovement: comparison.skinImprovement,
+          jawImprovement: comparison.jawImprovement,
+          bodyfatChange: comparison.bodyfatChange,
+          confidenceTrend: comparison.confidenceTrend,
+          notes: comparison.notes,
+          faceComparison: {
+            before: oldPhotos[0]?.url ?? "",
+            after: uploaded[0]?.url ?? "",
+          },
+          createdAt: new Date().toISOString(),
+        },
+        ...prev.progressChecks,
+      ],
+    }));
+
+    setShowUpload(false);
+    toast.success("Weekly comparison complete!");
+  };
 
   return (
     <>
@@ -117,7 +122,7 @@ export default function ProgressPage() {
 
         {showUpload && (
           <GlassCard className="mt-4">
-            <PhotoUploader photos={photos} onPhotosChange={setPhotos} minPhotos={3} />
+            <PhotoUploader photos={photos} onPhotosChange={setPhotos} minPhotos={1} />
             <Button className="mt-4 w-full" onClick={runComparison} disabled={comparing}>
               {comparing ? "Comparing..." : "Run Weekly Comparison"}
             </Button>
