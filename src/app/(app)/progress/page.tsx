@@ -61,13 +61,8 @@ export default function ProgressPage() {
     }
 
     setComparing(true);
-    const existingRes = await fetch("/api/photos/upload");
-    const existing = await existingRes.json();
 
-    const photoIds = uploaded.map((p) => {
-      const match = existing.find((ep: { type: string }) => ep.type === p.type);
-      return match?.id;
-    }).filter(Boolean);
+    const photoIds = uploaded.map((p) => p.id).filter(Boolean);
 
     const res = await fetch("/api/progress", {
       method: "POST",

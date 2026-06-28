@@ -9,6 +9,13 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!session.user.isPremium) {
+    return NextResponse.json(
+      { error: "AI Coach requires Premium" },
+      { status: 403 }
+    );
+  }
+
   const messages = await prisma.message.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "asc" },

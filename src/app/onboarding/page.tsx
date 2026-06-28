@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const STEPS = ["Basics", "Body", "Lifestyle", "Face"];
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -74,9 +76,13 @@ export default function OnboardingPage() {
     setLoading(false);
 
     if (!res.ok) {
-      toast.error("Failed to save profile");
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || "Failed to save profile");
+      setLoading(false);
       return;
     }
+
+    await updateSession({ onboardingComplete: true });
 
     router.push("/upload");
     router.refresh();

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { registerSchema } from "@/lib/validations/auth";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -17,39 +18,74 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+
+    setFieldErrors({});
+
+    const parsed = registerSchema.safeParse({ name, email, password });
+    if (!parsed.success) {
+      const errors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0]?.toString() ?? "form";
+        if (!errors[key]) errors[key] = issue.message;
+      }
+      setFieldErrors(errors);
+      toast.error(
+        errors.form ?? errors.name ?? errors.email ?? errors.password ?? "Please fix the errors below"
+      );
+      return;
+    }
+
     setLoading(true);
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
 
-    if (!res.ok) {
-      const data = await res.json();
-      toast.error(data.error || "Registration failed");
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (data.fieldErrors) {
+          setFieldErrors(data.fieldErrors);
+        }
+        toast.error(data.error || "Registration failed");
+        setLoading(false);
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        email: parsed.data.email,
+        password: parsed.data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error("Account created. Please sign in.");
+        router.push("/auth/signin");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/onboarding");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
       setLoading(false);
-      return;
     }
+  };
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (result?.error) {
-      toast.error("Account created but sign in failed");
-      return;
-    }
-
-    router.push("/onboarding");
-    router.refresh();
+  const handleGoogle = () => {
+    if (googleLoading || loading) return;
+    setGoogleLoading(true);
+    signIn("google", { callbackUrl: "/onboarding" });
   };
 
   return (
@@ -75,51 +111,97 @@ export default function SignUpPage() {
           transition={{ delay: 0.1 }}
           onSubmit={handleSubmit}
           className="space-y-4"
+          noValidate
         >
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              autoComplete="name"
               placeholder="Your name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+              onChange={(e) => {
+                setName(e.target.value);
+                if (fieldErrors.name) {
+                  setFieldErrors((prev) => ({ ...prev, name: "" }));
+                }
+              }}
+              aria-invalid={!!fieldErrors.name}
+              disabled={loading}
             />
+            {fieldErrors.name && (
+              <p className="text-sm text-red-400">{fieldErrors.name}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldErrors.email) {
+                  setFieldErrors((prev) => ({ ...prev, email: "" }));
+                }
+              }}
+              aria-invalid={!!fieldErrors.email}
+              disabled={loading}
             />
+            {fieldErrors.email && (
+              <p className="text-sm text-red-400">{fieldErrors.email}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
-              placeholder="Min 8 characters"
+              autoComplete="new-password"
+              placeholder="Min 8 characters, letters & numbers"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (fieldErrors.password) {
+                  setFieldErrors((prev) => ({ ...prev, password: "" }));
+                }
+              }}
+              aria-invalid={!!fieldErrors.password}
+              disabled={loading}
             />
+            {fieldErrors.password && (
+              <p className="text-sm text-red-400">{fieldErrors.password}</p>
+            )}
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Creating account..." : "Create Account"}
+          <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              "Create Account"
+            )}
           </Button>
         </motion.form>
 
         <Button
           variant="secondary"
           className="mt-4 w-full"
-          onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+          onClick={handleGoogle}
+          disabled={loading || googleLoading}
         >
-          Continue with Google
+          {googleLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Redirecting...
+            </>
+          ) : (
+            "Continue with Google"
+          )}
         </Button>
 
         <p className="mt-6 text-center text-sm text-white/60">

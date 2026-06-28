@@ -48,7 +48,7 @@ cp .env.example .env
 
 Required:
 - `DATABASE_URL` — PostgreSQL connection string
-- `NEXTAUTH_SECRET` — `openssl rand -base64 32`
+- `AUTH_SECRET` or `NEXTAUTH_SECRET` — `openssl rand -base64 32`
 - `NEXTAUTH_URL` — `http://localhost:3000`
 - `OPENAI_API_KEY` — for Vision AI analysis
 
@@ -60,7 +60,13 @@ For Premium billing:
 ### 3. Set up database
 
 ```bash
-npm run db:push
+npx prisma migrate deploy
+```
+
+Or for development:
+
+```bash
+npm run db:migrate
 ```
 
 ### 4. Run development server

@@ -20,3 +20,16 @@ declare module "next-auth/jwt" {
     onboardingComplete?: boolean;
   }
 }
+
+declare module "next-auth" {
+  interface User {
+    id: string;
+  }
+}
+
+// Session update payload (useSession().update())
+export interface SessionUpdatePayload {
+  onboardingComplete?: boolean;
+  name?: string;
+  image?: string;
+}

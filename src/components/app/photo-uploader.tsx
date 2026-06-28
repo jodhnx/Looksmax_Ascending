@@ -37,7 +37,7 @@ export interface PhotoSlot {
 
 interface PhotoUploaderProps {
   photos: PhotoSlot[];
-  onPhotosChange: (photos: PhotoSlot[]) => void;
+  onPhotosChange: React.Dispatch<React.SetStateAction<PhotoSlot[]>>;
   minPhotos?: number;
 }
 
@@ -48,8 +48,8 @@ export function PhotoUploader({
 }: PhotoUploaderProps) {
   const uploadPhoto = useCallback(
     async (type: PhotoSlotType, file: File) => {
-      onPhotosChange(
-        photos.map((p) =>
+      onPhotosChange((prev) =>
+        prev.map((p) =>
           p.type === type ? { ...p, uploading: true, errors: undefined } : p
         )
       );
@@ -66,8 +66,8 @@ export function PhotoUploader({
         const data = await res.json();
 
         if (!res.ok) {
-          onPhotosChange(
-            photos.map((p) =>
+          onPhotosChange((prev) =>
+            prev.map((p) =>
               p.type === type
                 ? { ...p, uploading: false, errors: [data.error || "Upload failed"] }
                 : p
@@ -76,8 +76,8 @@ export function PhotoUploader({
           return;
         }
 
-        onPhotosChange(
-          photos.map((p) =>
+        onPhotosChange((prev) =>
+          prev.map((p) =>
             p.type === type
               ? {
                   ...p,
@@ -91,8 +91,8 @@ export function PhotoUploader({
           )
         );
       } catch {
-        onPhotosChange(
-          photos.map((p) =>
+        onPhotosChange((prev) =>
+          prev.map((p) =>
             p.type === type
               ? { ...p, uploading: false, errors: ["Network error"] }
               : p
@@ -100,7 +100,7 @@ export function PhotoUploader({
         );
       }
     },
-    [photos, onPhotosChange]
+    [onPhotosChange]
   );
 
   const handleFile = (type: PhotoSlotType, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,8 +110,8 @@ export function PhotoUploader({
   };
 
   const removePhoto = (type: PhotoSlotType) => {
-    onPhotosChange(
-      photos.map((p) =>
+    onPhotosChange((prev) =>
+      prev.map((p) =>
         p.type === type
           ? { type, url: undefined, qualityScore: undefined, errors: undefined }
           : p
