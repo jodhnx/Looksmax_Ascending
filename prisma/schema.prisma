@@ -1,0 +1,318 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth (NextAuth) ─────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  isPremium     Boolean   @default(false)
+  stripeCustomerId String? @unique
+  onboardingComplete Boolean @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+  photos        Photo[]
+  analyses      Analysis[]
+  ascensionPlans AscensionPlan[]
+  dailyTasks    DailyTask[]
+  userChallenges UserChallenge[]
+  subscription  Subscription?
+  messages      Message[]
+  statistics    Statistic[]
+  progressChecks ProgressCheck[]
+  notificationPrefs NotificationPreference?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  age             Int?
+  heightCm        Float?
+  weightKg        Float?
+  gender          String?
+  goal            String?
+  bodyfatEstimate Float?
+  gymExperience   String?
+  sleepHours      Float?
+  waterIntakeL    Float?
+  skincare        String?
+  hairType        String?
+  beardGrowth     String?
+  jawVisibility   String?
+  teethCondition  String?
+  eyeArea         String?
+  acne            String?
+  faceSymmetry    String?
+  currentStreak   Int      @default(0)
+  longestStreak   Int      @default(0)
+  lastActiveDate  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum PhotoType {
+  FRONT_FACE
+  LEFT_SIDE
+  RIGHT_SIDE
+  SMILE
+  NEUTRAL
+  FULL_BODY_FRONT
+  FULL_BODY_SIDE
+}
+
+model Photo {
+  id          String    @id @default(cuid())
+  userId      String
+  type        PhotoType
+  url         String    @db.Text
+  qualityScore Float?
+  width       Int?
+  height      Int?
+  analysisId  String?
+  progressCheckId String?
+  createdAt   DateTime  @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis      Analysis?      @relation(fields: [analysisId], references: [id])
+  progressCheck ProgressCheck? @relation(fields: [progressCheckId], references: [id])
+
+  @@index([userId, type])
+}
+
+model Analysis {
+  id                    String   @id @default(cuid())
+  userId                String
+  looksScore            Float
+  confidenceScore       Float
+  improvementPotential  Float
+  scores                Json
+  strengths             Json
+  weaknesses            Json
+  summary               String   @db.Text
+  rawResponse           Json?
+  isWeeklyComparison    Boolean  @default(false)
+  previousAnalysisId    String?
+  improvementPercent    Float?
+  comparisonData        Json?
+  createdAt             DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos Photo[]
+  plans  AscensionPlan[]
+
+  @@index([userId, createdAt])
+}
+
+model AscensionPlan {
+  id         String   @id @default(cuid())
+  userId     String
+  analysisId String?
+  dayNumber  Int
+  title      String
+  tasks      Json
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis Analysis? @relation(fields: [analysisId], references: [id])
+
+  @@unique([userId, dayNumber])
+  @@index([userId, isActive])
+}
+
+model DailyTask {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  tasks     Json
+  completed Int      @default(0)
+  total     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model ProgressCheck {
+  id                  String   @id @default(cuid())
+  userId              String
+  weekNumber          Int
+  improvementPercent  Float?
+  faceComparison      Json?
+  skinImprovement     Float?
+  jawImprovement      Float?
+  bodyfatChange       Float?
+  confidenceTrend     Float?
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos Photo[]
+
+  @@index([userId, weekNumber])
+}
+
+enum ChallengeType {
+  GLOW_UP_30
+  HARD_75_LITE
+  PERFECT_SKIN
+  PERFECT_SLEEP
+  HYDRATION
+  GYM_CONSISTENCY
+}
+
+model Challenge {
+  id          String        @id @default(cuid())
+  type        ChallengeType @unique
+  title       String
+  description String        @db.Text
+  duration    Int
+  tasks       Json
+  createdAt   DateTime      @default(now())
+
+  userChallenges UserChallenge[]
+}
+
+model UserChallenge {
+  id          String   @id @default(cuid())
+  userId      String
+  challengeId String
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  progress    Int      @default(0)
+  completed   Boolean  @default(false)
+  dailyLog    Json?
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id])
+
+  @@unique([userId, challengeId])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+  INCOMPLETE
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  status               SubscriptionStatus @default(INCOMPLETE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Statistic {
+  id                 String   @id @default(cuid())
+  userId             String
+  date               DateTime @db.Date
+  weightKg           Float?
+  bodyfat            Float?
+  faceScore          Float?
+  skinScore          Float?
+  jawScore           Float?
+  sleepHours         Float?
+  waterLiters        Float?
+  workoutDone        Boolean  @default(false)
+  calories           Int?
+  proteinGrams       Int?
+  steps              Int?
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model NotificationPreference {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  morningReminder Boolean @default(true)
+  workoutReminder Boolean @default(true)
+  skincareReminder Boolean @default(true)
+  waterReminder   Boolean @default(true)
+  sleepReminder   Boolean @default(true)
+  weeklyPhoto     Boolean @default(true)
+  morningTime     String  @default("07:00")
+  workoutTime     String  @default("17:00")
+  skincareTime    String  @default("21:00")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
