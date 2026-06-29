@@ -1,26 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Flame,
-  Calendar,
-  CheckSquare,
   Camera,
-  Sparkles,
-  Dumbbell,
+  ChevronRight,
+  Zap,
   Target,
 } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
-import { GlassCard } from "@/components/app/glass-card";
 import { ScoreRing } from "@/components/app/score-ring";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { getGreetingDE, de } from "@/lib/i18n/de";
-import { MorningBanner } from "@/components/app/morning-banner";
 import { useStorage } from "@/hooks/use-storage";
-import { getDashboardFromStorage, getCurrentPlanDay } from "@/lib/storage/helpers";
-import { daysSince } from "@/lib/plan-utils";
+import { getDashboardFromStorage, getCurrentPlanDay, todayKey } from "@/lib/storage/helpers";
+import { getTotalXp, getLevelProgress, getTodayXp } from "@/lib/gamification/xp";
 import { getWeakestCategory } from "@/lib/analysis/scoring";
 import { getFocusAreaDE } from "@/lib/i18n/de";
 
@@ -28,203 +23,175 @@ export default function DashboardPage() {
   const { data } = useStorage();
   const dash = getDashboardFromStorage(data);
   const planDay = getCurrentPlanDay(data);
+  const today = todayKey();
   const latest = dash.latestAnalysis;
   const ascendScore = latest?.ascendScore ?? latest?.looksScore;
 
   const taskProgress = dash.dailyTask
-    ? (dash.dailyTask.completed / dash.dailyTask.total) * 100
+    ? (dash.dailyTask.completed / Math.max(dash.dailyTask.total, 1)) * 100
     : 0;
 
-  const lastProgressDate =
-    data.progressChecks[0]?.createdAt ?? latest?.createdAt;
-  const daysUntilScan = Math.max(0, 7 - daysSince(lastProgressDate));
-  const needsScan = daysSince(lastProgressDate) >= 7 && latest;
-
+  const totalXp = getTotalXp(data);
+  const levelInfo = getLevelProgress(totalXp);
+  const todayXp = getTodayXp(data, today);
   const todayPlan = data.ascensionPlans[planDay - 1];
-  const weekProgress = Math.min(100, taskProgress);
+
+  const nextTasks = (dash.dailyTask?.tasks ?? [])
+    .filter((t) => !t.completed)
+    .slice(0, 3);
+
   const currentFocus = latest
     ? getFocusAreaDE(getWeakestCategory(latest.scores))
     : null;
 
   return (
     <>
-      <div className="px-6 py-8">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-sm text-white/50">{getGreetingDE()}</p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            {latest ? de.dashboard.title : de.dashboard.welcome}
-          </h1>
-        </motion.div>
+      <div className="min-h-screen bg-background pb-28">
+        <div className="page-glow pointer-events-none fixed inset-0" />
 
-        {needsScan && (
-          <Link href="/progress">
-            <GlassCard className="mt-5 flex items-center gap-3 border-violet-500/30 bg-violet-500/10" delay={0.05}>
-              <Camera className="h-8 w-8 shrink-0 text-violet-400" />
-              <div className="flex-1">
-                <p className="font-semibold text-white">{de.dashboard.weeklyScanDue}</p>
-                <p className="text-xs text-white/60">{de.dashboard.weeklyScanHint}</p>
-              </div>
-            </GlassCard>
-          </Link>
-        )}
+        <div className="relative mx-auto max-w-lg px-5 pt-[max(env(safe-area-inset-top),20px)] sm:px-6">
+          <header className="pb-5">
+            <p className="text-xs font-medium text-white/40">{getGreetingDE()}</p>
+            <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-white">
+              {de.dashboard.title}
+            </h1>
+          </header>
 
-        {todayPlan && latest && (
-          <div className="mt-5">
-            <MorningBanner
-              todayFocus={todayPlan.todayFocus}
-              dailyQuote={todayPlan.dailyQuote}
-              estimatedImprovement={todayPlan.estimatedImprovement}
-              xpAvailable={todayPlan.xpAvailable}
-              completionReward={todayPlan.completionReward}
-              weeklyGoal={todayPlan.weeklyGoal}
-              streak={dash.profile?.currentStreak}
-              delay={0.06}
-            />
-          </div>
-        )}
-
-        <GlassCard className="mt-5" delay={0.08}>
-          <div className="flex items-center justify-between">
-            {ascendScore != null ? (
-              <ScoreRing score={ascendScore} maxScore={100} size={110} label={de.dashboard.ascendScore} />
-            ) : (
-              <div className="py-4 text-center">
-                <p className="text-4xl font-bold text-white/20">—</p>
-                <p className="text-sm text-white/50">{de.dashboard.noScan}</p>
-              </div>
-            )}
-            <div className="space-y-5 text-right">
-              <div>
-                <p className="flex items-center justify-end gap-1.5 text-2xl font-bold text-orange-400">
-                  <Flame className="h-5 w-5" />
-                  {dash.profile?.currentStreak ?? 0}
-                </p>
-                <p className="text-xs text-white/50">{de.dashboard.streak}</p>
-              </div>
-              <div>
-                <p className="flex items-center justify-end gap-1.5 text-lg font-bold text-violet-400">
-                  <Calendar className="h-4 w-4" />
-                  {latest ? `${de.dashboard.day} ${planDay}` : "—"}
-                </p>
-                <p className="text-xs text-white/50">{de.dashboard.planDay}</p>
-              </div>
+          {!latest ? (
+            <div className="glass-card p-6 text-center">
+              <p className="text-sm text-white/50">{de.dashboard.welcome}</p>
+              <Button asChild className="mt-5 h-12 w-full rounded-2xl" size="lg">
+                <Link href="/upload">
+                  <Camera className="h-4 w-4" />
+                  {de.dashboard.startAnalysis}
+                </Link>
+              </Button>
             </div>
-          </div>
-
-          {latest && (
-            <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">{de.dashboard.improvementTrend}</span>
-                <span
-                  className={`font-semibold ${
-                    dash.weeklyImprovement >= 0 ? "text-emerald-400" : "text-red-400"
-                  }`}
-                >
-                  {dash.weeklyImprovement >= 0 ? "+" : ""}
-                  {dash.weeklyImprovement.toFixed(0)} Pkt.
-                </span>
-              </div>
-              <div>
-                <div className="mb-1 flex justify-between text-xs text-white/45">
-                  <span>{de.dashboard.weeklyGoal}</span>
-                  <span>{Math.round(weekProgress)}%</span>
+          ) : (
+            <div className="space-y-3">
+              {/* Score + Level row */}
+              <div className="glass-card flex items-center gap-4 p-4">
+                <ScoreRing
+                  score={ascendScore ?? 0}
+                  maxScore={100}
+                  size={88}
+                  label={de.dashboard.ascendScore}
+                />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+                        {de.dashboard.level}
+                      </p>
+                      <p className="text-xl font-bold text-white">{levelInfo.level}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+                        {de.dashboard.streak}
+                      </p>
+                      <p className="flex items-center justify-end gap-1 text-xl font-bold text-orange-400">
+                        <Flame className="h-4 w-4" />
+                        {dash.profile?.currentStreak ?? 0}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-1 flex justify-between text-[10px] text-white/40">
+                      <span>{de.dashboard.totalXp}</span>
+                      <span className="text-violet-400">
+                        {levelInfo.current}/{levelInfo.next}
+                      </span>
+                    </div>
+                    <Progress value={levelInfo.percent} className="h-1" />
+                  </div>
                 </div>
-                <Progress value={weekProgress} className="h-1.5" />
               </div>
-              {!needsScan && (
-                <p className="text-xs text-white/40">
-                  {de.dashboard.nextScan} {daysUntilScan}{" "}
-                  {daysUntilScan === 1 ? de.dashboard.day : de.dashboard.days}
-                </p>
+
+              {/* Today + Week progress */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="glass-card p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+                    {de.dashboard.todayProgress}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-white">
+                    {Math.round(taskProgress)}%
+                  </p>
+                  <Progress value={taskProgress} className="mt-2 h-1" />
+                  <p className="mt-1.5 text-[10px] text-white/40">
+                    {dash.dailyTask?.completed ?? 0}/{dash.dailyTask?.total ?? 0}
+                  </p>
+                </div>
+                <div className="glass-card p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-white/35">
+                    {de.dashboard.weeklyProgress}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-white">
+                    {de.dashboard.day} {planDay}
+                  </p>
+                  <p className="mt-1 text-[10px] text-white/40">{todayPlan?.phase}</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs text-violet-400">
+                    <Zap className="h-3 w-3" />
+                    {todayXp.earned}/{todayXp.total} XP
+                  </p>
+                </div>
+              </div>
+
+              {/* Focus */}
+              {currentFocus && (
+                <div className="glass-card flex items-center gap-3 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15">
+                    <Target className="h-4 w-4 text-violet-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-white/40">{de.dashboard.currentFocus}</p>
+                    <p className="truncate text-sm font-medium text-white">{currentFocus}</p>
+                  </div>
+                </div>
               )}
+
+              {/* Next tasks */}
+              {nextTasks.length > 0 && (
+                <div className="glass-card p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-medium text-white">{de.dashboard.nextTasks}</p>
+                    <Link href="/tasks" className="text-xs text-violet-400">
+                      {de.dashboard.viewAll}
+                    </Link>
+                  </div>
+                  <div className="space-y-2">
+                    {nextTasks.map((t) => (
+                      <Link
+                        key={t.id}
+                        href="/tasks"
+                        className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5 transition-colors active:bg-white/[0.06]"
+                      >
+                        <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                        <span className="min-w-0 flex-1 truncate text-sm text-white/80">
+                          {t.label}
+                        </span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-white/25" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick links */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <Link href="/plan" className="glass-card block p-4 transition-colors active:bg-white/[0.06]">
+                  <p className="text-sm font-medium text-white">{de.nav.plan}</p>
+                  <p className="mt-0.5 text-[10px] text-white/40">
+                    {de.dashboard.day} {planDay}/30
+                  </p>
+                </Link>
+                <Link href="/tasks" className="glass-card block p-4 transition-colors active:bg-white/[0.06]">
+                  <p className="text-sm font-medium text-white">{de.nav.tasks}</p>
+                  <p className="mt-0.5 text-[10px] text-white/40">{de.dashboard.todayTasks}</p>
+                </Link>
+              </div>
             </div>
           )}
-        </GlassCard>
-
-        {currentFocus && (
-          <GlassCard className="mt-4 border-violet-500/20" delay={0.1}>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/20">
-                <Target className="h-5 w-5 text-violet-400" />
-              </div>
-              <div>
-                <p className="text-xs text-white/50">{de.dashboard.currentFocus}</p>
-                <p className="font-semibold text-white">{currentFocus}</p>
-              </div>
-            </div>
-          </GlassCard>
-        )}
-
-        <GlassCard className="mt-4" delay={0.12}>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 font-semibold text-white">
-              <CheckSquare className="h-4 w-4 text-violet-400" />
-              {de.dashboard.todayTasks}
-            </h3>
-            <Link href="/tasks" className="text-xs text-violet-400">
-              {de.dashboard.viewAll}
-            </Link>
-          </div>
-          <Progress value={taskProgress} className="mb-2 h-2" />
-          <p className="mb-3 text-sm text-white/50">
-            {Math.round(taskProgress)}% · {dash.dailyTask?.completed ?? 0}/
-            {dash.dailyTask?.total ?? 0} {de.dashboard.complete}
-          </p>
-          <div className="space-y-2">
-            {(dash.dailyTask?.tasks ?? []).slice(0, 4).map((t) => (
-              <div key={t.id} className="flex items-center gap-2.5 text-sm">
-                <div
-                  className={`h-2 w-2 rounded-full ${
-                    t.completed ? "bg-emerald-400" : "bg-white/20"
-                  }`}
-                />
-                <span className={t.completed ? "text-white/35 line-through" : "text-white/80"}>
-                  {t.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-
-        {latest && (
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Link href="/plan">
-              <GlassCard delay={0.16} className="!p-4 transition-colors hover:bg-white/[0.07]">
-                <Calendar className="mb-2 h-5 w-5 text-violet-400" />
-                <p className="font-semibold text-white">
-                  {de.dashboard.day} {planDay}
-                </p>
-                <p className="text-xs text-white/50">{de.dashboard.planLink}</p>
-              </GlassCard>
-            </Link>
-            <Link href="/exercises">
-              <GlassCard delay={0.18} className="!p-4 transition-colors hover:bg-white/[0.07]">
-                <Dumbbell className="mb-2 h-5 w-5 text-emerald-400" />
-                <p className="font-semibold text-white">{de.nav.exercises}</p>
-                <p className="text-xs text-white/50">{de.dashboard.exercisesLink}</p>
-              </GlassCard>
-            </Link>
-          </div>
-        )}
-
-        {!todayPlan && !latest && (
-          <GlassCard className="mt-4 border-violet-500/10" delay={0.22}>
-            <div className="flex items-start gap-3">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
-              <p className="text-sm italic leading-relaxed text-white/65">
-                Starte deine Analyse für ein personalisiertes 30-Tage-Programm.
-              </p>
-            </div>
-          </GlassCard>
-        )}
-
-        {!latest && (
-          <Button asChild className="mt-6 h-14 w-full rounded-2xl" size="lg">
-            <Link href="/upload">
-              <Camera className="h-5 w-5" /> {de.dashboard.startAnalysis}
-            </Link>
-          </Button>
-        )}
+        </div>
       </div>
       <BottomNav />
     </>

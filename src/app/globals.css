@@ -1,14 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050508;
-  --foreground: #ffffff;
-  --card: rgba(255, 255, 255, 0.04);
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --muted: rgba(255, 255, 255, 0.55);
-  --border: rgba(255, 255, 255, 0.08);
-  --ring: rgba(139, 92, 246, 0.5);
+  --background: #07070c;
+  --foreground: #f5f5f7;
+  --card: rgba(255, 255, 255, 0.035);
+  --primary: #7c3aed;
+  --muted: rgba(255, 255, 255, 0.48);
+  --border: rgba(255, 255, 255, 0.07);
 }
 
 @theme inline {
@@ -33,31 +31,55 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 .safe-area-pb {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
 }
 
+.page-glow {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(99, 102, 241, 0.06), transparent);
+}
+
+.glass-card {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
 .gradient-text {
-  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #818cf8 100%);
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 45%, #818cf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

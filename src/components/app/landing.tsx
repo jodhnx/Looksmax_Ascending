@@ -8,11 +8,8 @@ import { de } from "@/lib/i18n/de";
 
 export function LandingPage() {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050508]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-violet-600/20 blur-[100px]" />
-        <div className="absolute -right-20 top-1/3 h-80 w-80 rounded-full bg-indigo-500/15 blur-[120px]" />
-      </div>
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+      <div className="page-glow pointer-events-none absolute inset-0" />
 
       <div className="relative mx-auto flex w-full max-w-lg flex-1 flex-col justify-between px-6 py-12 safe-area-pb">
         <motion.p
@@ -48,7 +45,7 @@ export function LandingPage() {
             transition={{ delay: 0.2 }}
             className="w-full max-w-sm space-y-4"
           >
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl text-left">
+            <div className="glass-card p-5 text-left">
               {de.landing.features.map((text) => (
                 <Feature key={text} text={text} />
               ))}

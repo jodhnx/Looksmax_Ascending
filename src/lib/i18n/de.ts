@@ -30,27 +30,39 @@ export const de = {
   },
 
   upload: {
-    title: "Fotos hochladen",
-    subtitle:
-      "Frontalansicht und Seitenprofil. MediaPipe prüft lokal: ein Gesicht, Beleuchtung, Schärfe und Winkel.",
+    title: "Foto-Scan",
+    subtitle: "Frontalansicht und Seitenprofil — lokal auf deinem Gerät analysiert.",
     back: "Zurück",
-    startScan: "ASCEND-Analyse starten",
+    startScan: "Analyse starten",
     scanning: "ASCEND-Scan läuft…",
     validated: "Fotos validiert",
-    awaiting: "Warte auf Qualitätsfotos",
-    ready: "Bereit zum Scannen",
-    bothRequired: "Beide Fotos müssen die Validierung bestehen",
-    scanComplete: "ASCEND-Scan abgeschlossen!",
+    awaiting: "Fotos erforderlich",
+    ready: "Bereit",
+    bothRequired: "Beide Fotos müssen die Qualitätsprüfung bestehen",
+    scanComplete: "Scan abgeschlossen!",
     scanFailed: "Analyse fehlgeschlagen",
   },
 
   photo: {
     frontFace: "Frontalansicht",
     sideProfile: "Seitenprofil",
-    frontHint: "Direkt in die Kamera schauen, neutraler Ausdruck",
-    sideHint: "90° drehen — Kieferlinie und Nacken sichtbar",
-    validating: "Gesichtsmesh wird erkannt…",
+    frontHint: "Direkt in die Kamera, neutraler Ausdruck",
+    sideHint: "90° zur Seite — Kiefer & Nacken sichtbar",
+    validating: "Qualitätsprüfung…",
     quality: "Qualität",
+    takePhoto: "Foto aufnehmen",
+    useGallery: "Foto aus Galerie auswählen",
+    retake: "Erneut aufnehmen",
+    validatedCount: "validiert",
+    cameraError: "Kamera nicht verfügbar — bitte Galerie nutzen",
+  },
+
+  scan: {
+    title: "ASCEND-Scan",
+    stepMesh: "Gesichtsmesh wird erkannt…",
+    stepMetrics: "Proportionen werden gemessen…",
+    stepScore: "ASCEND Score wird berechnet…",
+    stepPlan: "Dein 30-Tage-Plan wird erstellt…",
   },
 
   dashboard: {
@@ -78,6 +90,11 @@ export const de = {
     exercisesLink: "Übungsbibliothek",
     startAnalysis: "Analyse starten",
     complete: "erledigt",
+    level: "Level",
+    totalXp: "Gesamt-XP",
+    todayProgress: "Heute",
+    weeklyProgress: "Diese Woche",
+    nextTasks: "Nächste Aufgaben",
   },
 
   analysis: {

@@ -1,14 +1,21 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, CheckCircle, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
+import {
+  Camera,
+  ImageIcon,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CameraModal } from "@/components/app/camera-modal";
 import { cn } from "@/lib/utils";
 import { validatePhoto } from "@/lib/analysis/validation";
 import type { PhotoSlotType } from "@/lib/analysis/types";
-
 import { de } from "@/lib/i18n/de";
 
 const PHOTO_LABELS: Record<PhotoSlotType, string> = {
@@ -44,6 +51,11 @@ export function PhotoUploader({
   onPhotosChange,
   minPhotos = 2,
 }: PhotoUploaderProps) {
+  const [activeSlot, setActiveSlot] = useState<PhotoSlotType | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const [gallerySlot, setGallerySlot] = useState<PhotoSlotType | null>(null);
+
   const uploadPhoto = useCallback(
     async (type: PhotoSlotType, file: File) => {
       onPhotosChange((prev) =>
@@ -86,6 +98,7 @@ export function PhotoUploader({
               : p
           )
         );
+        setActiveSlot(null);
       } catch {
         onPhotosChange((prev) =>
           prev.map((p) =>
@@ -99,10 +112,22 @@ export function PhotoUploader({
     [onPhotosChange]
   );
 
-  const handleFile = (type: PhotoSlotType, e: React.ChangeEvent<HTMLInputElement>) => {
+  const openCamera = (type: PhotoSlotType) => {
+    setActiveSlot(type);
+    setCameraOpen(true);
+  };
+
+  const openGallery = (type: PhotoSlotType) => {
+    setGallerySlot(type);
+    galleryRef.current?.click();
+  };
+
+  const handleGallery = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadPhoto(type, file);
+    const type = gallerySlot;
+    if (file && type) uploadPhoto(type, file);
     e.target.value = "";
+    setGallerySlot(null);
   };
 
   const removePhoto = (type: PhotoSlotType) => {
@@ -113,138 +138,202 @@ export function PhotoUploader({
           : p
       )
     );
+    setActiveSlot(type);
   };
 
   const validatedCount = photos.filter((p) => p.validated && p.url).length;
   const allValid = validatedCount >= minPhotos;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-white/60">
-          {validatedCount} von {photos.length} Fotos validiert
-        </p>
-        <div
-          className={cn(
-            "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
-            allValid ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-white/60"
-          )}
-        >
-          {allValid ? (
-            <>
-              <ShieldCheck className="h-3.5 w-3.5" /> {de.upload.ready}
-            </>
-          ) : (
-            de.upload.awaiting
-          )}
-        </div>
-      </div>
+    <>
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleGallery}
+      />
 
-      <div className="grid grid-cols-2 gap-4">
-        {photos.map((photo) => (
-          <motion.div
-            key={photo.type}
-            layout
+      <CameraModal
+        open={cameraOpen}
+        slotType={activeSlot ?? "FRONT_FACE"}
+        onClose={() => setCameraOpen(false)}
+        onCapture={(file) => {
+          setCameraOpen(false);
+          if (activeSlot) uploadPhoto(activeSlot, file);
+        }}
+      />
+
+      <div className="space-y-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-white/45">
+            {validatedCount}/{photos.length} {de.photo.validatedCount}
+          </p>
+          <span
             className={cn(
-              "relative aspect-[3/4] overflow-hidden rounded-3xl border-2 transition-all duration-300",
-              photo.validated
-                ? "border-emerald-500/40 shadow-lg shadow-emerald-500/10"
-                : photo.errors?.length
-                  ? "border-red-500/40"
-                  : "border-white/15 hover:border-white/30"
+              "rounded-full px-2.5 py-1 text-[11px] font-medium",
+              allValid ? "bg-emerald-500/15 text-emerald-400" : "bg-white/[0.06] text-white/50"
             )}
           >
-            <input
-              type="file"
-              accept="image/*"
-              capture="user"
-              className="absolute inset-0 z-10 cursor-pointer opacity-0"
-              onChange={(e) => handleFile(photo.type, e)}
-              disabled={photo.uploading}
+            {allValid ? de.upload.ready : de.upload.awaiting}
+          </span>
+        </div>
+
+        <div className="space-y-4">
+          {photos.map((photo, index) => (
+            <PhotoSlotCard
+              key={photo.type}
+              photo={photo}
+              step={index + 1}
+              isActive={activeSlot === photo.type || (!photo.url && index === validatedCount)}
+              onCamera={() => openCamera(photo.type)}
+              onGallery={() => openGallery(photo.type)}
+              onRetake={() => removePhoto(photo.type)}
             />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
 
-            <AnimatePresence mode="wait">
-              {photo.uploading ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex h-full flex-col items-center justify-center gap-2 bg-white/5"
-                >
-                  <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
-                  <span className="text-xs text-white/60">{de.photo.validating}</span>
-                </motion.div>
-              ) : photo.url ? (
-                <motion.div
-                  key="preview"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="relative h-full w-full"
-                >
-                  <Image
-                    src={photo.url}
-                    alt={PHOTO_LABELS[photo.type]}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-xs font-semibold text-white">{PHOTO_LABELS[photo.type]}</p>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="text-[10px] text-white/70">{de.photo.quality} {photo.qualityScore}%</span>
-                      {photo.validated ? (
-                        <CheckCircle className="h-4 w-4 text-emerald-400" />
-                      ) : (
-                        <AlertCircle className="h-4 w-4 text-amber-400" />
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 z-20 h-8 w-8 rounded-full bg-black/50 backdrop-blur"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removePhoto(photo.type);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex h-full flex-col items-center justify-center gap-3 p-4"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-                    <Upload className="h-6 w-6 text-white/40" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-white/80">{PHOTO_LABELS[photo.type]}</p>
-                    <p className="mt-1 text-[10px] leading-tight text-white/45">
-                      {PHOTO_HINTS[photo.type]}
-                    </p>
-                  </div>
-                </motion.div>
+function PhotoSlotCard({
+  photo,
+  step,
+  isActive,
+  onCamera,
+  onGallery,
+  onRetake,
+}: {
+  photo: PhotoSlot;
+  step: number;
+  isActive: boolean;
+  onCamera: () => void;
+  onGallery: () => void;
+  onRetake: () => void;
+}) {
+  const hasPreview = !!photo.url && !photo.uploading;
+
+  return (
+    <motion.div
+      layout
+      className={cn(
+        "overflow-hidden rounded-2xl border transition-colors",
+        photo.validated
+          ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+          : isActive
+            ? "border-violet-500/35 bg-white/[0.04]"
+            : "border-white/[0.07] bg-white/[0.02]"
+      )}
+    >
+      <div className="flex items-center gap-3 border-b border-white/[0.05] px-4 py-3">
+        <span
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+            photo.validated
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "bg-violet-500/20 text-violet-300"
+          )}
+        >
+          {photo.validated ? <CheckCircle2 className="h-4 w-4" /> : step}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-white">
+            {PHOTO_LABELS[photo.type]}
+          </p>
+          <p className="truncate text-[11px] text-white/40">{PHOTO_HINTS[photo.type]}</p>
+        </div>
+        {photo.validated && photo.qualityScore != null && (
+          <QualityBadge score={photo.qualityScore} />
+        )}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {photo.uploading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center gap-3 py-12"
+          >
+            <Loader2 className="h-7 w-7 animate-spin text-violet-400" />
+            <p className="text-xs text-white/50">{de.photo.validating}</p>
+          </motion.div>
+        ) : hasPreview ? (
+          <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4">
+            <div className="relative aspect-[4/5] max-h-56 w-full overflow-hidden rounded-xl">
+              <Image
+                src={photo.url!}
+                alt={PHOTO_LABELS[photo.type]}
+                fill
+                className="object-cover"
+                unoptimized
+                sizes="(max-width: 480px) 100vw, 320px"
+              />
+              {!photo.validated && (
+                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-amber-950/80 to-transparent p-3">
+                  <p className="flex items-center gap-1.5 text-xs text-amber-200">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    {photo.errors?.[0] ?? de.errors.validationFailed}
+                  </p>
+                </div>
               )}
-            </AnimatePresence>
-
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-3 h-10 w-full rounded-xl text-white/60 hover:text-white"
+              onClick={onRetake}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              {de.photo.retake}
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-2.5 p-4"
+          >
             {photo.errors?.map((err) => (
               <p
                 key={err}
-                className="absolute bottom-0 left-0 right-0 bg-red-500/95 px-2 py-1.5 text-center text-[10px] leading-tight text-white"
+                className="rounded-xl bg-red-500/10 px-3 py-2 text-xs leading-relaxed text-red-300"
               >
                 {err}
               </p>
             ))}
+            <Button
+              className="h-12 w-full rounded-xl text-sm font-medium"
+              onClick={onCamera}
+            >
+              <Camera className="mr-2 h-4 w-4" />
+              {de.photo.takePhoto}
+            </Button>
+            <Button
+              variant="outline"
+              className="h-12 w-full rounded-xl border-white/10 bg-white/[0.03] text-sm font-medium text-white hover:bg-white/[0.06]"
+              onClick={onGallery}
+            >
+              <ImageIcon className="mr-2 h-4 w-4" />
+              {de.photo.useGallery}
+            </Button>
           </motion.div>
-        ))}
-      </div>
-    </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function QualityBadge({ score }: { score: number }) {
+  const color =
+    score >= 80 ? "text-emerald-400" : score >= 60 ? "text-amber-400" : "text-orange-400";
+  return (
+    <span className={cn("shrink-0 text-xs font-semibold", color)}>
+      {de.photo.quality} {score}%
+    </span>
   );
 }
 

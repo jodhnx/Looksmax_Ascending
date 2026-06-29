@@ -3,24 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Sparkles, ChevronLeft, Loader2 } from "lucide-react";
+import { Sparkles, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   PhotoUploader,
   ANALYSIS_PHOTO_SLOTS,
   type PhotoSlot,
 } from "@/components/app/photo-uploader";
+import { ScanOverlay } from "@/components/app/scan-overlay";
 import { toast } from "sonner";
 import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
 import { todayKey } from "@/lib/storage/helpers";
 import { planToStoredPlans } from "@/lib/plan-utils";
-import {
-  runFullAnalysis,
-  generateAscensionPlan,
-  planTasksToDailyItems,
-} from "@/lib/analysis";
 import { de } from "@/lib/i18n/de";
 
 export default function UploadPage() {
@@ -31,6 +26,7 @@ export default function UploadPage() {
 
   const validatedPhotos = photos.filter((p) => p.validated && p.url);
   const ready = validatedPhotos.length >= 2;
+  const previewUrl = validatedPhotos[0]?.url;
 
   const handleAnalyze = async () => {
     if (!ready) {
@@ -43,6 +39,10 @@ export default function UploadPage() {
     try {
       const front = validatedPhotos.find((p) => p.type === "FRONT_FACE")!.url!;
       const profile = validatedPhotos.find((p) => p.type === "SIDE_PROFILE")!.url!;
+
+      const { runFullAnalysis, generateAscensionPlan, planTasksToDailyItems } = await import(
+        "@/lib/analysis"
+      );
 
       const result = await runFullAnalysis(front, profile);
       const analysisId = generateId();
@@ -102,51 +102,51 @@ export default function UploadPage() {
         };
       });
 
-      toast.success(de.upload.scanComplete);
+      await new Promise((r) => setTimeout(r, 600));
       router.push(`/analysis/${analysisId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : de.upload.scanFailed);
-    } finally {
       setAnalyzing(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050508] px-6 py-8">
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-br from-violet-950/30 via-transparent to-indigo-950/20" />
+    <>
+      <ScanOverlay active={analyzing} photoUrl={previewUrl} />
 
-      <div className="relative mx-auto max-w-md">
-        <Link
-          href="/"
-          className="mb-6 inline-flex items-center gap-1 text-sm text-white/50 hover:text-white/80"
-        >
-          <ChevronLeft className="h-4 w-4" /> {de.upload.back}
-        </Link>
+      <div className="min-h-screen bg-background">
+        <div className="page-glow pointer-events-none fixed inset-0" />
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-white">{de.upload.title}</h1>
-          <p className="mt-2 text-sm leading-relaxed text-white/55">{de.upload.subtitle}</p>
-        </motion.div>
+        <div className="relative mx-auto max-w-lg px-5 pb-10 pt-[max(env(safe-area-inset-top),24px)] sm:px-6">
+          <Link
+            href="/"
+            className="mb-5 inline-flex items-center gap-1 text-sm text-white/45 transition-colors hover:text-white/70"
+          >
+            <ChevronLeft className="h-4 w-4" /> {de.upload.back}
+          </Link>
 
-        <PhotoUploader photos={photos} onPhotosChange={setPhotos} minPhotos={2} />
+          <header className="mb-6">
+            <h1 className="text-2xl font-semibold tracking-tight text-white">
+              {de.upload.title}
+            </h1>
+            <p className="mt-1.5 text-sm leading-relaxed text-white/45">
+              {de.upload.subtitle}
+            </p>
+          </header>
 
-        <Button
-          className="mt-8 h-14 w-full rounded-2xl text-base shadow-lg shadow-violet-500/20"
-          size="lg"
-          onClick={handleAnalyze}
-          disabled={!ready || analyzing}
-        >
-          {analyzing ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" /> {de.upload.scanning}
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-5 w-5" /> {de.upload.startScan}
-            </>
-          )}
-        </Button>
+          <PhotoUploader photos={photos} onPhotosChange={setPhotos} minPhotos={2} />
+
+          <Button
+            className="mt-6 h-[52px] w-full rounded-2xl text-[15px] font-semibold shadow-lg shadow-violet-600/20"
+            size="lg"
+            onClick={handleAnalyze}
+            disabled={!ready || analyzing}
+          >
+            <Sparkles className="h-5 w-5" />
+            {analyzing ? de.upload.scanning : de.upload.startScan}
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
