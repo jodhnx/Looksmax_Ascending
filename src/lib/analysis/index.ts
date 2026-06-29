@@ -14,6 +14,7 @@ export {
   generateDailyTasks,
   planTasksToDailyItems,
   getTodayPlanTasks,
+  ensurePlanTask,
   type PlanGenerationContext,
 } from "./plan-generator";
 export { compareProgress } from "./progress";

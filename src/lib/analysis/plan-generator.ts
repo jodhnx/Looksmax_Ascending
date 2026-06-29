@@ -5,6 +5,7 @@ import type { Profile } from "@/lib/storage/types";
 import { HABIT_DATABASE, getHabitById } from "@/lib/exercises/database";
 import type { GymLevel, HabitEntry, PersonalizationTag, TaskCategory } from "@/lib/exercises/types";
 import { WEEK_PHASES } from "@/lib/exercises/categories";
+import { enrichHabit } from "@/lib/exercises/habit-details";
 
 export interface PlanGenerationContext {
   analysis: AnalysisResult;
@@ -91,22 +92,24 @@ function buildReason(
   );
 
   if (habit.evidenceLevel === "optional") {
-    return `Optional: Dein Scan deutet auf Verbesserungspotenzial bei ${focusLabel} hin (${score}/100). Diese Übung ist freiwillig — begrenzte Evidenz für strukturelle Veränderung, kann aber Entspannung und Gewohnheitsbewusstsein fördern.`;
+    return `Diese Empfehlung wird angezeigt, weil dein Scan Verbesserungspotenzial bei ${focusLabel} zeigt (${score}/100). Diese Übung ist optional — begrenzte Evidenz für strukturelle Veränderungen.`;
   }
 
   if (weakness) {
-    return `Empfohlen, weil deine Analyse ${weakness} als Verbesserungsbereich zeigt (Schätzwert ${score}/100). Diese Gewohnheit unterstützt ${focusLabel} mit evidenzbasierten Methoden.`;
+    return `Diese Empfehlung wird angezeigt, weil deine Analyse auf eine Verbesserung von ${weakness} hindeutet (Schätzwert ${score}/100).`;
   }
 
-  return `Personalisiert für ${focusLabel} (Schätzwert ${score}/100) basierend auf deinem Frontal- und Profil-Scan.`;
+  return `Diese Empfehlung wird angezeigt, weil deine Analyse auf eine Verbesserung von ${focusLabel} hindeutet (Schätzwert ${score}/100).`;
 }
 
 function habitToTask(
   habit: HabitEntry,
   day: number,
   focusKey: keyof CategoryScores,
-  analysis: AnalysisResult
+  analysis: AnalysisResult,
+  slot = 0
 ): PlanTask {
+  const rich = enrichHabit(habit, slot);
   return {
     id: `d${day}-${habit.id}`,
     habitId: habit.id,
@@ -119,6 +122,13 @@ function habitToTask(
     icon: habit.icon,
     evidenceLevel: habit.evidenceLevel,
     reason: buildReason(habit, focusKey, analysis.scores, analysis.weaknesses),
+    steps: rich.steps,
+    benefits: rich.benefits,
+    hints: rich.hints,
+    frequency: rich.frequency,
+    targetGoals: rich.targetGoals,
+    estimatedImpact: rich.estimatedImpact,
+    timeOfDay: rich.timeOfDay,
   };
 }
 
@@ -179,7 +189,7 @@ function selectForDay(
       if (!habit) continue;
       dayUsed.add(habit.id);
       usedGlobal.add(habit.id);
-      tasks.push(habitToTask(habit, day, focusKey, analysis));
+      tasks.push(habitToTask(habit, day, focusKey, analysis, tasks.length));
     }
   }
 
@@ -193,7 +203,7 @@ function selectForDay(
     if (!habit || dayUsed.has(habit.id)) continue;
     dayUsed.add(habit.id);
     usedGlobal.add(habit.id);
-    tasks.push(habitToTask(habit, day, focusKey, analysis));
+    tasks.push(habitToTask(habit, day, focusKey, analysis, tasks.length));
   }
 
   // Progress reflection every 3rd day
@@ -202,7 +212,7 @@ function selectForDay(
     const habit = pickHabit(progressHabits, usedGlobal, rand, tags);
     if (habit) {
       usedGlobal.add(habit.id);
-      tasks.push(habitToTask(habit, day, focusKey, analysis));
+      tasks.push(habitToTask(habit, day, focusKey, analysis, tasks.length));
     }
   }
 
@@ -212,7 +222,7 @@ function selectForDay(
     const habit = pickHabit(hairHabits, usedGlobal, rand, ["haar"]);
     if (habit) {
       usedGlobal.add(habit.id);
-      tasks.push(habitToTask(habit, day, focusKey, analysis));
+      tasks.push(habitToTask(habit, day, focusKey, analysis, tasks.length));
     }
   }
 
@@ -247,7 +257,7 @@ function buildFaceSection(
     const h = pickHabit(evidenceBased, used, rand, tags);
     if (!h) break;
     used.add(h.id);
-    evTasks.push(habitToTask(h, 0, focusKey, analysis));
+    evTasks.push(habitToTask(h, 0, focusKey, analysis, evTasks.length));
   }
 
   const optTasks: PlanTask[] = [];
@@ -256,7 +266,7 @@ function buildFaceSection(
       const h = pickHabit(optional, used, rand, ["kiefer", "kinn"]);
       if (!h) break;
       used.add(h.id);
-      optTasks.push(habitToTask(h, 0, focusKey, analysis));
+      optTasks.push(habitToTask(h, 0, focusKey, analysis, optTasks.length));
     }
   }
 
@@ -423,6 +433,23 @@ export function generateAscensionPlan(
   return plan;
 }
 
+export function ensurePlanTask(task: PlanTask): PlanTask {
+  if (task.steps?.length && task.benefits?.length) return task;
+  const habit = getHabitById(task.habitId);
+  if (!habit) return task;
+  const rich = enrichHabit(habit);
+  return {
+    ...task,
+    steps: task.steps?.length ? task.steps : rich.steps,
+    benefits: task.benefits?.length ? task.benefits : rich.benefits,
+    hints: task.hints?.length ? task.hints : rich.hints,
+    frequency: task.frequency ?? rich.frequency,
+    targetGoals: task.targetGoals?.length ? task.targetGoals : rich.targetGoals,
+    estimatedImpact: task.estimatedImpact ?? rich.estimatedImpact,
+    timeOfDay: task.timeOfDay ?? rich.timeOfDay,
+  };
+}
+
 export function planTasksToDailyItems(tasks: PlanTask[]) {
   return tasks.map((t) => ({
     id: t.id,
@@ -435,6 +462,13 @@ export function planTasksToDailyItems(tasks: PlanTask[]) {
     icon: t.icon,
     evidenceLevel: t.evidenceLevel,
     reason: t.reason,
+    steps: t.steps,
+    benefits: t.benefits,
+    hints: t.hints,
+    frequency: t.frequency,
+    targetGoals: t.targetGoals,
+    estimatedImpact: t.estimatedImpact,
+    timeOfDay: t.timeOfDay,
     completed: false,
   }));
 }

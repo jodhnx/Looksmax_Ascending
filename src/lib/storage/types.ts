@@ -54,6 +54,13 @@ export interface DailyTaskItem {
   icon?: string;
   evidenceLevel?: "evidenzbasiert" | "optional";
   reason?: string;
+  steps?: string[];
+  benefits?: string[];
+  hints?: string[];
+  frequency?: string;
+  targetGoals?: string[];
+  estimatedImpact?: string;
+  timeOfDay?: "morgen" | "nachmittag" | "abend" | "nacht";
 }
 
 export interface DailyTaskRecord {

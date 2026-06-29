@@ -81,6 +81,7 @@ export interface AnalysisResult {
 }
 
 import type { EvidenceLevel, TaskCategory } from "@/lib/exercises/types";
+import type { TimeOfDay } from "@/lib/exercises/habit-details";
 
 export interface PlanTask {
   id: string;
@@ -94,6 +95,13 @@ export interface PlanTask {
   icon: string;
   evidenceLevel: EvidenceLevel;
   reason: string;
+  steps: string[];
+  benefits: string[];
+  hints: string[];
+  frequency: string;
+  targetGoals: string[];
+  estimatedImpact: string;
+  timeOfDay: TimeOfDay;
   completed?: boolean;
 }
 
