@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ASCEND AI — Premium Looksmax & Ascension",
   description:
-    "AI-powered facial analysis, personalized 30-day ascension plans, and progress tracking. Your premium glow-up companion.",
+    "AI-powered facial analysis, personalized 30-day improvement plans, and progress tracking. Your self-improvement companion.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

@@ -1,15 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["sharp"],
   images: {
     unoptimized: true,
   },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "10mb",
-    },
-  },
+  transpilePackages: ["@mediapipe/tasks-vision"],
+  outputFileTracingRoot: path.join(__dirname),
 };
 
 export default nextConfig;

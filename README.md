@@ -1,65 +1,38 @@
-# ASCEND AI
+# ASCEND AI V2
 
-Premium mobile-first web app for AI-powered facial aesthetics analysis, personalized 30-day ascension plans, and progress tracking.
+Premium looksmax application with **fully local** facial analysis. No API keys. No accounts. No database.
 
 ## Tech Stack
 
-- **Next.js 15** (App Router)
-- **TypeScript**
-- **TailwindCSS 4**
-- **Framer Motion**
-- **OpenAI GPT-4o Vision**
-- **IndexedDB** (primary on-device storage, LocalStorage fallback)
+- **Next.js 15** · **TypeScript** · **TailwindCSS 4** · **Framer Motion**
+- **MediaPipe Face Mesh** (468 landmarks) — on-device computer vision
+- **IndexedDB** storage (LocalStorage fallback)
 
-## Features
+## User Flow
 
-- No accounts, registration, login, or sessions
-- Opens directly to the Home Dashboard
-- Multi-step onboarding (saved locally)
-- Photo upload with quality validation
-- AI facial & posture analysis (25+ scored metrics)
-- Personalized 30-day Ascension Plan
-- Daily checklist with streak tracking
-- Weekly progress comparisons (Premium)
-- AI Coach chat (Premium)
-- Challenges
-- Statistics dashboard
-- Fully offline except OpenAI API calls
+Landing → Upload (front + side) → ASCEND Score → 30-day plan → Dashboard → Weekly progress
 
 ## Getting Started
 
 ```bash
 npm install
-cp .env.example .env
-# Add OPENAI_API_KEY
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — redirects to `/dashboard`.
+Open [http://localhost:3000](http://localhost:3000)
 
-## Environment Variables
+No environment variables required.
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | Vision AI analysis, plans, coach, progress |
+## Features
 
-## Data Storage
+- Local photo validation (one face, lighting, sharpness, angle)
+- ASCEND SCORE (0–100) from facial geometry
+- Personalized 30-day plan & daily tasks
+- Exercise library with animations
+- Weekly progress comparisons
+- Local ASCEND Coach (rule-based)
+- Fully offline after first MediaPipe model load
 
-All user data is stored locally on the device:
+## Storage
 
-- **IndexedDB** (`ascend-ai-db`) — primary store with automatic backups
-- **LocalStorage** — fallback and legacy migration from `ascend-ai-data`
-
-Stored data includes photos, analyses, plans, tasks, challenges, streaks, workout/nutrition plans, weight history, measurements, settings, theme, notifications, premium state, and AI coach chat.
-
-Data loads instantly on app open. Changes auto-save after every update. Users can export or clear data from Settings.
-
-## Deployment (Vercel)
-
-1. Push to GitHub and import in Vercel
-2. Set `OPENAI_API_KEY`
-3. Deploy — no database setup needed
-
-## License
-
-Private — All rights reserved.
+All data persists in IndexedDB on your device.

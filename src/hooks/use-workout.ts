@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useStorage } from "./use-storage";
-import type { PlanDay } from "@/lib/openai";
+import type { PlanDay } from "@/lib/analysis/types";
 import type { WorkoutPlan } from "@/lib/storage/types";
 import { getCurrentPlanDay } from "@/lib/storage/helpers";
 

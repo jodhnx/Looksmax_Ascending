@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatScore(score: number): string {
-  return score.toFixed(1);
+  return Math.round(score).toString();
 }
 
 export function getGreeting(): string {

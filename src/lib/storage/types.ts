@@ -1,13 +1,6 @@
-import type { AnalysisResult, PlanDay } from "@/lib/openai";
+import type { AnalysisResult, PlanDay } from "@/lib/analysis/types";
 
-export type PhotoSlotType =
-  | "FRONT_FACE"
-  | "LEFT_SIDE"
-  | "RIGHT_SIDE"
-  | "SMILE"
-  | "NEUTRAL"
-  | "FULL_BODY_FRONT"
-  | "FULL_BODY_SIDE";
+export type PhotoSlotType = "FRONT_FACE" | "SIDE_PROFILE";
 
 export type Theme = "dark" | "light";
 
@@ -69,10 +62,14 @@ export interface ProgressCheck {
   improvementPercent: number;
   skinImprovement: number;
   jawImprovement: number;
-  bodyfatChange: number;
-  confidenceTrend: number;
+  postureImprovement?: number;
+  harmonyImprovement?: number;
+  bodyfatChange?: number;
+  confidenceTrend?: number;
+  completedTasksImpact?: string;
   notes: string;
   faceComparison: { before: string; after: string };
+  sideComparison?: { before: string; after: string };
   createdAt: string;
 }
 

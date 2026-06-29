@@ -1,48 +1,27 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Send, Crown, Bot } from "lucide-react";
+import { Send, Bot } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
-import { getCurrentPlanDay } from "@/lib/storage/helpers";
+import { coachReply } from "@/lib/analysis/coach";
 
 export default function CoachPage() {
   const { data, update } = useStorage();
   const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messages = data.messages;
+  const latest = data.analyses[data.analyses.length - 1];
 
-  if (!data.isPremium) {
-    return (
-      <>
-        <div className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
-          <Crown className="mb-4 h-16 w-16 text-amber-400" />
-          <h1 className="text-2xl font-bold text-white">AI Coach</h1>
-          <p className="mt-2 text-white/60">
-            Get personalized advice based on your profile, progress, and goals
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/premium">Unlock AI Coach</Link>
-          </Button>
-        </div>
-        <BottomNav />
-      </>
-    );
-  }
-
-  const send = async () => {
-    if (!input.trim() || sending) return;
+  const send = () => {
+    if (!input.trim()) return;
     const content = input.trim();
     setInput("");
-    setSending(true);
 
     const userMsg = {
       id: generateId(),
@@ -51,43 +30,18 @@ export default function CoachPage() {
       createdAt: new Date().toISOString(),
     };
 
-    update((prev) => ({
-      ...prev,
-      messages: [...prev.messages, userMsg],
-    }));
-
-    const history = [...messages, userMsg].map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: history,
-        isPremium: data.isPremium,
-        userContext: {
-          profile: data.profile,
-          latestAnalysis: data.analyses[data.analyses.length - 1],
-          stats: data.statistics.slice(-7),
-          currentPlan: data.ascensionPlans[getCurrentPlanDay(data) - 1],
-        },
-      }),
+    const reply = coachReply(content, {
+      latestAnalysis: latest,
+      streak: data.profile?.currentStreak ?? 0,
+      completedTasksTotal: Object.values(data.dailyTasks).reduce((sum, d) => sum + d.completed, 0),
+      goals: latest?.topImprovements,
     });
 
-    setSending(false);
-
-    if (!res.ok) {
-      toast.error("Failed to send message");
-      return;
-    }
-
-    const { content: reply } = await res.json();
     update((prev) => ({
       ...prev,
       messages: [
         ...prev.messages,
+        userMsg,
         {
           id: generateId(),
           role: "assistant" as const,
@@ -104,32 +58,33 @@ export default function CoachPage() {
     <>
       <div className="flex h-[calc(100vh-5rem)] flex-col px-4 py-6">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20">
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white">AI Coach</h1>
-            <p className="text-xs text-white/60">Personalized ascension advice</p>
+            <h1 className="font-bold text-white">ASCEND Coach</h1>
+            <p className="text-xs text-white/50">Local guidance from your scan data</p>
           </div>
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto pb-4">
           {messages.length === 0 && (
             <GlassCard className="text-center">
-              <p className="text-sm text-white/60">
-                Ask me anything about skincare, workouts, posture, nutrition, or your ascension plan.
+              <p className="text-sm leading-relaxed text-white/55">
+                Ask about jaw, skin, posture, sleep, workouts, or your 30-day plan.
+                {latest ? ` ASCEND Score: ${latest.ascendScore ?? latest.looksScore}.` : " Complete a scan first."}
               </p>
             </GlassCard>
           )}
           {messages.map((msg) => (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-violet-600 text-white"
                     : "border border-white/10 bg-white/5 text-white/90"
@@ -148,9 +103,9 @@ export default function CoachPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
-            disabled={sending}
+            className="rounded-2xl border-white/10 bg-white/5"
           />
-          <Button size="icon" onClick={send} disabled={sending}>
+          <Button size="icon" onClick={send} className="shrink-0 rounded-2xl">
             <Send className="h-4 w-4" />
           </Button>
         </div>

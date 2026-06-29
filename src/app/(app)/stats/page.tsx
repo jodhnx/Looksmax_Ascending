@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Crown } from "lucide-react";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { GlassCard } from "@/components/app/glass-card";
-import { Button } from "@/components/ui/button";
 import { formatScore } from "@/lib/utils";
 import { useStorage } from "@/hooks/use-storage";
 
@@ -29,25 +26,13 @@ export default function StatsPage() {
   return (
     <>
       <div className="px-6 py-8">
-        <h1 className="text-2xl font-bold text-white">Statistics</h1>
-        <p className="text-white/60">Track your ascension metrics</p>
-
-        {!data.isPremium && (
-          <GlassCard className="mt-4 flex items-center gap-3 border-amber-500/20">
-            <Crown className="h-6 w-6 text-amber-400" />
-            <div className="flex-1">
-              <p className="text-sm text-white/80">Advanced charts available with Premium</p>
-            </div>
-            <Button asChild size="sm" variant="secondary">
-              <Link href="/premium">Upgrade</Link>
-            </Button>
-          </GlassCard>
-        )}
+        <h1 className="text-2xl font-bold tracking-tight text-white">Statistics</h1>
+        <p className="text-sm text-white/50">Your improvement trends over time</p>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           {metrics.map((m, i) => (
             <GlassCard key={m.label} delay={i * 0.03} className="!p-4">
-              <p className="text-xs text-white/60">{m.label}</p>
+              <p className="text-xs text-white/50">{m.label}</p>
               <p className="mt-1 text-xl font-bold text-white">
                 {m.value != null ? m.format(m.value) : "—"}
               </p>
@@ -55,21 +40,22 @@ export default function StatsPage() {
           ))}
         </div>
 
-        {data.isPremium && stats.length > 1 && (
-          <GlassCard className="mt-6" delay={0.3}>
+        {stats.length > 1 && (
+          <GlassCard className="mt-6" delay={0.25}>
             <h3 className="mb-4 font-semibold text-white">Face Score Trend</h3>
             <div className="flex h-32 items-end gap-1">
               {stats.slice(-14).map((s, i) => (
                 <motion.div
                   key={s.date}
                   initial={{ height: 0 }}
-                  animate={{ height: `${((s.faceScore ?? 0) / 10) * 100}%` }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex-1 rounded-t bg-gradient-to-t from-violet-600 to-indigo-500"
-                  style={{ minHeight: 4 }}
+                  animate={{ height: `${(s.faceScore ?? 0)}%` }}
+                  transition={{ delay: i * 0.04, duration: 0.5 }}
+                  className="flex-1 rounded-t bg-gradient-to-t from-violet-600 to-indigo-400"
+                  style={{ minHeight: 4, maxHeight: "100%" }}
                 />
               ))}
             </div>
+            <p className="mt-2 text-xs text-white/40">Last {Math.min(stats.length, 14)} entries</p>
           </GlassCard>
         )}
       </div>
