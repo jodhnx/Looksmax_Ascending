@@ -80,17 +80,51 @@ export interface AnalysisResult {
   summary: string;
 }
 
+import type { EvidenceLevel, TaskCategory } from "@/lib/exercises/types";
+
+export interface PlanTask {
+  id: string;
+  habitId: string;
+  title: string;
+  description: string;
+  category: TaskCategory;
+  durationMinutes: number;
+  difficulty: "leicht" | "mittel" | "schwer";
+  xp: number;
+  icon: string;
+  evidenceLevel: EvidenceLevel;
+  reason: string;
+  completed?: boolean;
+}
+
+export interface PlanFaceSection {
+  evidenceBased: PlanTask[];
+  optional: PlanTask[];
+  disclaimer: string;
+}
+
 export interface PlanDay {
   dayNumber: number;
   weekNumber: number;
   weekday: string;
   title: string;
+  phase: string;
   focus: string;
+  focusReason: string;
+  dailyQuote: string;
+  todayFocus: string;
+  estimatedImprovement: string;
+  xpAvailable: number;
+  completionReward: string;
+  weeklyGoal: string;
+  tasks: PlanTask[];
+  faceSection?: PlanFaceSection;
+  nutrition: { protein: number; water: number; calories: number };
+  /** @deprecated Legacy sections — derived from tasks for backward compatibility */
   morningRoutine: string[];
   skincare: string[];
   exercises: string[];
   gym: string[];
-  nutrition: { protein: number; water: number; calories: number };
   habits: string[];
   eveningRoutine: string[];
   neckPosture?: string[];

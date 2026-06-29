@@ -19,7 +19,7 @@ import { planToStoredPlans } from "@/lib/plan-utils";
 import {
   runFullAnalysis,
   generateAscensionPlan,
-  generateDailyTasks,
+  planTasksToDailyItems,
 } from "@/lib/analysis";
 import { de } from "@/lib/i18n/de";
 
@@ -45,15 +45,17 @@ export default function UploadPage() {
       const profile = validatedPhotos.find((p) => p.type === "SIDE_PROFILE")!.url!;
 
       const result = await runFullAnalysis(front, profile);
-      const plan = generateAscensionPlan(result, 30);
-      const tasks = generateDailyTasks(result);
-
       const analysisId = generateId();
       const today = todayKey();
       const planStartDate = new Date().toISOString();
-      const { workoutPlans, nutritionPlans } = planToStoredPlans(plan, planStartDate);
 
       update((prev) => {
+        const plan = generateAscensionPlan(result, 30, {
+          analysis: result,
+          profile: prev.profile,
+        });
+        const tasks = planTasksToDailyItems(plan[0].tasks);
+        const { workoutPlans, nutritionPlans } = planToStoredPlans(plan, planStartDate);
         const storedPhotos = validatedPhotos.map((p) => ({
           id: p.id ?? generateId(),
           type: p.type,

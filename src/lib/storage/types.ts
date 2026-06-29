@@ -47,8 +47,13 @@ export interface DailyTaskItem {
   label: string;
   completed: boolean;
   category?: string;
+  description?: string;
   durationMinutes?: number;
   difficulty?: "leicht" | "mittel" | "schwer";
+  xp?: number;
+  icon?: string;
+  evidenceLevel?: "evidenzbasiert" | "optional";
+  reason?: string;
 }
 
 export interface DailyTaskRecord {

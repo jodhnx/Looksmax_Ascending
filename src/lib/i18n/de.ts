@@ -69,6 +69,9 @@ export const de = {
     days: "Tagen",
     day: "Tag",
     todayTasks: "Heutige Aufgaben",
+    morningFocus: "Heutiger Fokus",
+    xpToday: "XP verfügbar",
+    completionReward: "Belohnung bei 100%",
     viewAll: "Alle anzeigen",
     currentFocus: "Aktueller Fokus",
     planLink: "Plan ansehen",
@@ -107,19 +110,46 @@ export const de = {
 
   tasks: {
     title: "Tägliche Aufgaben",
-    subtitle: "Erledige Aufgaben, um deine Serie zu halten",
+    subtitle: "Dein personalisierter ASCEND-Tag",
     progress: "Fortschritt",
+    allComplete: "Alle Aufgaben erledigt — stark!",
+    xpTotal: "XP heute",
+    swipeHint: "Antippen zum Abhaken",
     difficulty: { leicht: "Leicht", mittel: "Mittel", schwer: "Schwer" },
     minutes: "Min.",
+    optional: "Optional",
+    evidenceBased: "Evidenzbasiert",
   },
 
   plan: {
     title: "30-Tage-Programm",
-    subtitle: "Personalisiert nach deiner Analyse",
+    subtitle: "Einzigartig für deine Analyse generiert",
     week: "Woche",
-    noPlan: "Schließe deine erste Analyse ab, um dein Programm freizuschalten.",
+    noPlan: "Schließe deine erste Analyse ab, um dein personalisiertes Programm freizuschalten.",
     startAnalysis: "Analyse starten",
     today: "Heute",
+    phases: {
+      fundament: "Fundament",
+      konsistenz: "Konsistenz",
+      optimierung: "Optimierung",
+      peak: "Peak-Routine",
+    },
+    todayFocus: "Heutiger Fokus",
+    dailyQuote: "Tageszitat",
+    xpAvailable: "XP verfügbar",
+    completionReward: "Abschluss-Belohnung",
+    weeklyGoal: "Wochenziel",
+    completion: "Erledigt",
+    xpEarned: "XP verdient",
+    streak: "Serie",
+    faceSection: "Gesicht & Aussehen",
+    evidenceBased: "Evidenzbasiert",
+    optional: "Optional — begrenzte Evidenz",
+    faceDisclaimer:
+      "Optionale Techniken ersetzen keine medizinische Beratung und verändern die Knochenstruktur nicht dauerhaft.",
+    whyRecommended: "Warum empfohlen?",
+    noTasks: "Keine Aufgaben für diesen Tag",
+    dayComplete: "Tag abgeschlossen!",
     sections: {
       morning: "Morgenroutine",
       skincare: "Hautpflege",
@@ -175,7 +205,7 @@ export const de = {
 
   exercises: {
     title: "Übungsbibliothek",
-    subtitle: "Haltung, Nacken, Haut & mehr",
+    subtitle: "256 personalisierte Übungen & Gewohnheiten",
     all: "Alle",
     reminder: "Erinnerung",
     steps: "Anleitung",
@@ -272,8 +302,9 @@ export function getGreetingDE(): string {
   return de.dashboard.greeting.evening;
 }
 
-export function getDailyQuoteDE(): string {
-  return de.quotes[new Date().getDate() % de.quotes.length];
+export function getDailyQuoteDE(day?: number): string {
+  const idx = day ?? new Date().getDate();
+  return de.quotes[idx % de.quotes.length];
 }
 
 export function getCategoryLabelDE(key: string): string {

@@ -2,12 +2,19 @@ export type {
   AnalysisResult,
   AnalysisScores,
   PlanDay,
+  PlanTask,
   PhotoSlotType,
   FaceMetrics,
   ValidationResult,
 } from "./types";
 
 export { validatePhoto, runFullAnalysis } from "./engine";
-export { generateAscensionPlan, generateDailyTasks } from "./plan-generator";
+export {
+  generateAscensionPlan,
+  generateDailyTasks,
+  planTasksToDailyItems,
+  getTodayPlanTasks,
+  type PlanGenerationContext,
+} from "./plan-generator";
 export { compareProgress } from "./progress";
 export { coachReply } from "./coach";

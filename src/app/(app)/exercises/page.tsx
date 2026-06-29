@@ -21,7 +21,7 @@ import {
   EXERCISE_LIBRARY,
   CATEGORY_LABELS,
   type ExerciseCategory,
-} from "@/lib/exercises/library";
+} from "@/lib/exercises";
 import { cn } from "@/lib/utils";
 import { de } from "@/lib/i18n/de";
 

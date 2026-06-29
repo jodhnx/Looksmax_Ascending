@@ -16,7 +16,8 @@ import { GlassCard } from "@/components/app/glass-card";
 import { ScoreRing } from "@/components/app/score-ring";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { getGreetingDE, getDailyQuoteDE, de } from "@/lib/i18n/de";
+import { getGreetingDE, de } from "@/lib/i18n/de";
+import { MorningBanner } from "@/components/app/morning-banner";
 import { useStorage } from "@/hooks/use-storage";
 import { getDashboardFromStorage, getCurrentPlanDay } from "@/lib/storage/helpers";
 import { daysSince } from "@/lib/plan-utils";
@@ -39,6 +40,7 @@ export default function DashboardPage() {
   const daysUntilScan = Math.max(0, 7 - daysSince(lastProgressDate));
   const needsScan = daysSince(lastProgressDate) >= 7 && latest;
 
+  const todayPlan = data.ascensionPlans[planDay - 1];
   const weekProgress = Math.min(100, taskProgress);
   const currentFocus = latest
     ? getFocusAreaDE(getWeakestCategory(latest.scores))
@@ -64,6 +66,21 @@ export default function DashboardPage() {
               </div>
             </GlassCard>
           </Link>
+        )}
+
+        {todayPlan && latest && (
+          <div className="mt-5">
+            <MorningBanner
+              todayFocus={todayPlan.todayFocus}
+              dailyQuote={todayPlan.dailyQuote}
+              estimatedImprovement={todayPlan.estimatedImprovement}
+              xpAvailable={todayPlan.xpAvailable}
+              completionReward={todayPlan.completionReward}
+              weeklyGoal={todayPlan.weeklyGoal}
+              streak={dash.profile?.currentStreak}
+              delay={0.06}
+            />
+          </div>
         )}
 
         <GlassCard className="mt-5" delay={0.08}>
@@ -190,14 +207,16 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <GlassCard className="mt-4 border-violet-500/10" delay={0.22}>
-          <div className="flex items-start gap-3">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
-            <p className="text-sm italic leading-relaxed text-white/65">
-              &ldquo;{getDailyQuoteDE()}&rdquo;
-            </p>
-          </div>
-        </GlassCard>
+        {!todayPlan && !latest && (
+          <GlassCard className="mt-4 border-violet-500/10" delay={0.22}>
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+              <p className="text-sm italic leading-relaxed text-white/65">
+                Starte deine Analyse für ein personalisiertes 30-Tage-Programm.
+              </p>
+            </div>
+          </GlassCard>
+        )}
 
         {!latest && (
           <Button asChild className="mt-6 h-14 w-full rounded-2xl" size="lg">

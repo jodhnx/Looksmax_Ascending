@@ -46,6 +46,8 @@ export default function CoachPage() {
       goals: latest?.topImprovements,
       progressChecks: data.progressChecks,
       currentPlanDay: planDay,
+      todayPlan: data.ascensionPlans[planDay - 1],
+      profile: data.profile,
     });
 
     update((prev) => ({

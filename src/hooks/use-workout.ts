@@ -49,8 +49,16 @@ export function useWorkout() {
     workoutPlans: data.workoutPlans,
     currentDay,
     todayPlan,
-    todayGym: todayPlan?.gym ?? [],
-    todayExercises: todayPlan?.exercises ?? [],
+    todayGym:
+      todayPlan?.tasks.filter((t) => t.category === "gym").map((t) => t.title) ??
+      todayPlan?.gym ??
+      [],
+    todayExercises:
+      todayPlan?.tasks
+        .filter((t) => ["haltung", "mobilitaet", "gym"].includes(t.category))
+        .map((t) => t.title) ??
+      todayPlan?.exercises ??
+      [],
     setAscensionPlans,
     addWorkoutPlan,
     toggleWorkoutDone,

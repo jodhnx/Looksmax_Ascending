@@ -8,12 +8,9 @@ export function planToStoredPlans(plan: PlanDay[], planStartDate: string) {
     id: `${day.dayNumber}-${format(addDays(start, day.dayNumber - 1), "yyyy-MM-dd")}`,
     date: format(addDays(start, day.dayNumber - 1), "yyyy-MM-dd"),
     title: day.title,
-    exercises: [
-      ...day.exercises,
-      ...day.gym,
-      ...(day.neckPosture ?? []),
-      ...(day.stretching ?? []),
-    ],
+    exercises: day.tasks
+      .filter((t) => ["gym", "haltung", "mobilitaet", "cardio"].includes(t.category))
+      .map((t) => t.title),
     completed: false,
   }));
   const nutritionPlans: NutritionPlan[] = plan.map((day) => ({
@@ -21,10 +18,9 @@ export function planToStoredPlans(plan: PlanDay[], planStartDate: string) {
     protein: day.nutrition.protein,
     water: day.nutrition.water,
     calories: day.nutrition.calories,
-    meals: [
-      ...(day.habits ?? []),
-      ...(day.facialMassage ?? []).slice(0, 2),
-    ],
+    meals: day.tasks
+      .filter((t) => ["ernaehrung", "wasser", "hautpflege"].includes(t.category))
+      .map((t) => t.title),
   }));
   return { workoutPlans, nutritionPlans };
 }

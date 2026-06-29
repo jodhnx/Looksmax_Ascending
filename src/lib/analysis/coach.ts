@@ -1,7 +1,8 @@
 import type { AnalysisResult } from "./types";
 import { getWeakestCategory } from "./scoring";
 import { getFocusAreaDE } from "@/lib/i18n/de";
-import type { ProgressCheck } from "@/lib/storage/types";
+import type { ProgressCheck, Profile } from "@/lib/storage/types";
+import type { PlanDay } from "./types";
 
 export interface CoachContext {
   latestAnalysis?: AnalysisResult;
@@ -13,6 +14,8 @@ export interface CoachContext {
   goals?: string[];
   progressChecks?: ProgressCheck[];
   currentPlanDay?: number;
+  todayPlan?: PlanDay;
+  profile?: Profile | null;
 }
 
 function scoreDelta(ctx: CoachContext): number | null {
@@ -32,6 +35,20 @@ function topTip(ctx: CoachContext): string {
   return ctx.latestAnalysis?.topImprovements?.[0] ?? weakest(ctx);
 }
 
+function whyPrefix(ctx: CoachContext, topic: string): string {
+  const reason =
+    ctx.todayPlan?.focusReason ??
+    `Dein Frontal- und Profil-Scan legt ${weakest(ctx)} als Priorität nahe.`;
+  return `**Warum ${topic}?** ${reason} `;
+}
+
+function todayTaskSummary(ctx: CoachContext): string {
+  const plan = ctx.todayPlan;
+  if (!plan?.tasks?.length) return "";
+  const cats = [...new Set(plan.tasks.map((t) => t.category))].slice(0, 4).join(", ");
+  return ` Heute (${plan.tasks.length} Aufgaben): Schwerpunkte in ${cats}. ${plan.xpAvailable} XP verfügbar.`;
+}
+
 export function coachReply(message: string, ctx: CoachContext): string {
   const lower = message.toLowerCase();
   const score = ctx.latestAnalysis?.ascendScore;
@@ -46,79 +63,76 @@ export function coachReply(message: string, ctx: CoachContext): string {
   const tasksTotal = ctx.todayTasksTotal ?? 0;
   const weeks = ctx.progressChecks?.length ?? 0;
   const day = ctx.currentPlanDay ?? 1;
+  const planHint = todayTaskSummary(ctx);
 
-  // Kiefer / Jawline
   if (/kiefer|jawline|kinn|masseter/.test(lower)) {
     const jawScore = ctx.latestAnalysis?.scores.jawDefinition;
-    return `Dein Kiefer-Bereich liegt aktuell bei ${jawScore != null ? `${Math.round(jawScore)}/100` : "—"} (Schätzwert). Bei ASCEND ${score ?? "—"} empfehle ich dir: Chin Tucks 3× täglich, Nacken-Isometrien, weniger Salz am Abend und ${topTip(ctx)}. Sichtbare Veränderungen brauchen meist 4–8 Wochen konsequente Arbeit — dein Wochenscan in ${weeks > 0 ? "der nächsten Woche" : "7 Tagen"} zeigt den Trend.`;
+    const fhp = ctx.latestAnalysis?.metrics.forwardHeadPosture;
+    return `${whyPrefix(ctx, "Kiefer- & Nackenarbeit")}Dein Kiefer-Bereich liegt bei ${jawScore != null ? `${Math.round(jawScore)}/100` : "—"} (Schätzwert). ${fhp != null && fhp > 0.12 ? "Dein Profil deutet auf Forward-Head-Haltung hin — Chin Tucks und Nackenkräftigung können das Gesamtbild und den Komfort verbessern." : "Körperfett, Hydration und Haltung beeinflussen die sichtbare Kieferlinie stärker als isolierte Übungen."} Evidenzbasiert: Chin Tucks, Nacken-Isometrien, weniger Abend-Salz. Optional (begrenzte Evidenz): Kaumuskel-Entspannung, kein dauerhaftes Knochen-Remodelling.${planHint}`;
   }
 
-  // Training heute
   if (/heute train|was soll ich heute|workout heute|training heute/.test(lower)) {
-    return `Tag ${day} deines Programms — Fokus: ${focus}. Heute: 10 Min. Haltungstraining, dann dein geplantes Oberkörper-/Ganzkörpertraining (30 Min.). Du hast ${tasksDone}/${tasksTotal} Aufgaben erledigt. ${tasksDone < tasksTotal / 2 ? "Starte mit den Chin Tucks — das dauert nur 8 Minuten." : "Stark! Schließe mit Dehnen ab."}`;
+    const gymTasks = ctx.todayPlan?.tasks.filter((t) => t.category === "gym") ?? [];
+    const gymList = gymTasks.map((t) => t.title).join(", ") || "dein geplantes Training";
+    return `${whyPrefix(ctx, "dieses Training")}Tag ${day} — Phase ${ctx.todayPlan?.phase ?? "Fundament"}. Fokus: ${ctx.todayPlan?.todayFocus ?? focus}. Training heute: ${gymList}. ${tasksDone}/${tasksTotal} Aufgaben erledigt.${tasksDone < tasksTotal / 2 ? " Tipp: Starte mit der kürzesten Haltungsaufgabe — oft unter 8 Minuten." : " Stark — schließe mit Mobilität ab."}`;
   }
 
-  // Score gesunken
   if (/score.*(gesunken|runter|gefallen|sinkt)|warum.*niedriger/.test(lower)) {
     if (delta != null && delta < 0) {
-      return `Dein ASCEND Score ist um ${Math.abs(Math.round(delta))} Punkte gesunken (${ctx.previousAnalysis?.ascendScore} → ${score}). Das kann an Fotoqualität, Beleuchtung, Schlaf oder Konsistenz liegen — nicht zwingend an echtem Rückschritt. Prüfe: ${weaknesses[0] ?? "Schlaf & Hydration"}. Deine Serie: ${streak} Tage. Bleib dran — ein schlechter Scan-Tag bedeutet nicht, dass deine Arbeit umsonst war.`;
+      return `${whyPrefix(ctx, "der Rückgang")}Score ${ctx.previousAnalysis?.ascendScore} → ${score} (${Math.abs(Math.round(delta))} Pkt.). Häufige Ursachen: andere Beleuchtung, Winkel, Schlafmangel — nicht zwingend echter Rückschritt. Scan-Hinweis: ${weaknesses[0] ?? "Schlaf & Hydration prüfen"}. Serie: ${streak} Tage.`;
     }
     return score
-      ? `Aktuell liegt dein ASCEND Score bei ${score} (${low}–${high}). Ein Rückgang entsteht oft durch schlechtere Fotos, wenig Schlaf oder weniger Training. Vergleiche immer unter gleichen Bedingungen (Licht, Winkel).`
-      : "Mach zuerst einen Baseline-Scan, damit ich Trends erkennen kann.";
-  }
-
-  // Welche Schwäche zuerst
-  if (/schwäche|zuerst verbess|priorit|wichtigste/.test(lower)) {
-    return `Basierend auf deiner Analyse: Priorität 1 ist **${weaknesses[0] ?? focus}**. Danach ${weaknesses[1] ?? "Hydration & Schlaf"}. Konkret: ${topTip(ctx)}. Deine Stärke ${strengths[0] ?? "ist deine Bereitschaft zur Veränderung"} — nutze sie als Motivation.`;
-  }
-
-  // Größte Verbesserung
-  if (/größte|grösste|beste verbesser|meiste bring|höchstes potenzial/.test(lower)) {
-    const pot = ctx.latestAnalysis?.improvementPotential;
-    return `Dein geschätztes Potenzial liegt bei ${pot ?? "—"}/100. Die größten Hebel für dich: ${(ctx.latestAnalysis?.topImprovements ?? []).slice(0, 3).join(" · ") || topTip(ctx)}. ASCEND Score ${score} — das ist eine Orientierung, kein Urteil.`;
-  }
-
-  // Haut
-  if (/haut|skin|akne|spf|pflege|dark circle|augenring/.test(lower)) {
-    const skin = ctx.latestAnalysis?.scores.skin;
-    return `Haut-Score: ${skin != null ? Math.round(skin) : "—"}/100. Routine: Reinigung AM/PM, SPF jeden Morgen, Kissenbezug 2×/Woche wechseln, 2,5L+ Wasser. ${weaknesses.find((w) => /haut/i.test(w)) ? `Scan-Hinweis: ${weaknesses.find((w) => /haut/i.test(w))}.` : ""} Schlaf verbessert oft die Augenpartie schneller als jedes Serum.`;
-  }
-
-  // Frisur
-  if (/frisur|haar|hair|haarschnitt|styling/.test(lower)) {
-    const hair = ctx.latestAnalysis?.scores.hair;
-    return `Haar/Präsentation: ${hair != null ? Math.round(hair) : "—"}/100. Empfehlung: saubere Haarlinie, passender Schnitt zur Gesichtsform, Kopfhautpflege 2 Min. täglich. Bei deinem Gesichtsprofil wirken seitlich mehr Volumen oben oft harmonischer — das ist Styling-Tip, keine Regel.`;
-  }
-
-  // Haltung
-  if (/haltung|posture|nacken|forward head|vorne halt/.test(lower)) {
-    const posture = ctx.latestAnalysis?.scores.posture;
-    return `Haltungs-Score: ${posture != null ? Math.round(posture) : "—"}/100. Täglich: Chin Tucks, Wall Angels, Brustdehnung. Stündliche Erinnerung: Schultern zurück, Ohren über Schultern. In 2 Wochen täglicher Arbeit siehst du das oft im Profil-Scan.`;
-  }
-
-  // Wie lange bis sichtbar
-  if (/wie lange|wann sehe|sichtbar|dauer|zeit bis/.test(lower)) {
-    return `Realistisch: erste subtile Trends nach 2–3 Wochen (Haut, Haltung), deutlichere Veränderungen nach 6–12 Wochen. Du bist in Woche ${weeks + 1} deiner Reise, Tag ${day}/30, Serie ${streak}. Wöchentliche Scans zeigen den objektivsten Fortschritt — bleib bei gleicher Foto-Setup.`;
-  }
-
-  // Score allgemein
-  if (/ascend|score|bewertung|punkt/.test(lower)) {
-    return score
-      ? `Dein ASCEND Score: **${score}** (Schätzbereich ${low}–${high}). Stärken: ${strengths.slice(0, 2).join(", ") || "—"}. Fokus: ${focus}. ${delta != null ? `Trend zum letzten Scan: ${delta >= 0 ? "+" : ""}${Math.round(delta)} Punkte.` : ""} Das ist Orientierung zur Selbstverbesserung — kein objektives Urteil.`
+      ? `ASCEND ${score} (${low}–${high}). Rückgänge entstehen oft durch Foto-Setup. Vergleiche unter gleichen Bedingungen.`
       : "Starte mit Frontal- und Profilfoto für deinen Baseline-Score.";
   }
 
-  // Plan / Routine
-  if (/plan|programm|routine|tag \d|woche/.test(lower)) {
-    return `Du bist an Tag ${day} deines 30-Tage-Programms. Heutiger Fokus: ${focus}. Top-Empfehlungen: ${(ctx.goals ?? ctx.latestAnalysis?.topImprovements ?? []).slice(0, 2).join(" · ") || topTip(ctx)}. ${tasksDone}/${tasksTotal} Aufgaben heute erledigt — ${tasksDone >= tasksTotal ? "perfekt!" : "mach die nächste Aufgabe jetzt."}`;
+  if (/schwäche|zuerst verbess|priorit|wichtigste|warum.*empfehl/.test(lower)) {
+    const taskReason = ctx.todayPlan?.tasks[0]?.reason;
+    return `${whyPrefix(ctx, "diese Priorität")}Priorität 1: **${weaknesses[0] ?? focus}**. Danach: ${weaknesses[1] ?? "Hydration & Schlaf"}. Konkret: ${topTip(ctx)}. ${taskReason ? `Beispiel aus deinem Plan: ${taskReason}` : ""} Stärke: ${strengths[0] ?? "deine Bereitschaft zur Veränderung"}.`;
   }
 
-  // Schlaf / Wasser / Ernährung
-  if (/schlaf|müde|wasser|hydrat|ernähr|protein/.test(lower)) {
-    return `Grundlagen für deinen Scan (${score ?? "—"}): 7–8h Schlaf, 2,5–3L Wasser, ausreichend Protein. Das verbessert oft Haut und Gesichtsödeme schneller als isolierte Übungen. Serie: ${streak} Tage — schütze sie.`;
+  if (/größte|grösste|beste verbesser|meiste bring|höchstes potenzial/.test(lower)) {
+    const pot = ctx.latestAnalysis?.improvementPotential;
+    return `${whyPrefix(ctx, "dieses Potenzial")}Geschätztes Potenzial: ${pot ?? "—"}/100. Größte Hebel: ${(ctx.latestAnalysis?.topImprovements ?? []).slice(0, 3).join(" · ") || topTip(ctx)}. ASCEND ${score} — Orientierung, kein Urteil.${planHint}`;
   }
 
-  // Default — immer personalisiert
-  return `ASCEND ${score ?? "—"} · Fokus: ${focus}. Stärke: ${strengths[0] ?? "deine Konstanz"}. Nächster Schritt: ${topTip(ctx)}. Du hast ${ctx.completedTasksTotal ?? 0} Aufgaben insgesamt erledigt, Serie ${streak} Tage. Frag mich konkret zu Kiefer, Haut, Haltung, Training oder deinem Score-Trend.`;
+  if (/haut|skin|akne|spf|pflege|dark circle|augenring/.test(lower)) {
+    const skin = ctx.latestAnalysis?.scores.skin;
+    return `${whyPrefix(ctx, "Hautpflege")}Haut-Score: ${skin != null ? Math.round(skin) : "—"}/100. Evidenzbasiert: Reinigung AM/PM, SPF täglich, 2,5L+ Wasser, Kissenbezug wechseln. ${weaknesses.find((w) => /haut/i.test(w)) ? `Scan: ${weaknesses.find((w) => /haut/i.test(w))}.` : ""} Schlaf verbessert die Augenpartie oft schneller als Seren allein.${planHint}`;
+  }
+
+  if (/frisur|haar|hair|haarschnitt|styling/.test(lower)) {
+    const hair = ctx.latestAnalysis?.scores.hair;
+    return `${whyPrefix(ctx, "Haarpflege")}Haar/Präsentation: ${hair != null ? Math.round(hair) : "—"}/100. Empfehlung: saubere Haarlinie, passender Schnitt, Kopfhautpflege 2 Min. täglich. Styling-Tip basierend auf deinem Profil — keine feste Regel.${planHint}`;
+  }
+
+  if (/haltung|posture|nacken|forward head|vorne halt/.test(lower)) {
+    const posture = ctx.latestAnalysis?.scores.posture;
+    const fhp = ctx.latestAnalysis?.metrics.forwardHeadPosture;
+    return `${whyPrefix(ctx, "Haltungstraining")}Haltungs-Score: ${posture != null ? Math.round(posture) : "—"}/100. ${fhp != null && fhp > 0.1 ? "Dein hochgeladenes Profil legt Forward-Head-Haltung nahe — zusätzliche Haltungsarbeit kann dein Gesamtbild und deinen Komfort verbessern." : "Präventive Haltungsarbeit unterstützt Nacken und Präsentation."} Täglich: Chin Tucks, Wall Slides, Brustdehnung. Profil-Scan in 2 Wochen zeigt oft den ersten Trend.${planHint}`;
+  }
+
+  if (/wie lange|wann sehe|sichtbar|dauer|zeit bis/.test(lower)) {
+    return `Realistisch: erste Trends nach 2–3 Wochen (Haut, Haltung), deutlicher nach 6–12 Wochen. Woche ${weeks + 1}, Tag ${day}/30, Serie ${streak}. Wöchentliche Scans unter gleichem Setup sind am aussagekräftigsten.`;
+  }
+
+  if (/ascend|score|bewertung|punkt/.test(lower)) {
+    return score
+      ? `ASCEND **${score}** (${low}–${high}). Stärken: ${strengths.slice(0, 2).join(", ") || "—"}. Fokus: ${focus}. ${delta != null ? `Trend: ${delta >= 0 ? "+" : ""}${Math.round(delta)} Pkt.` : ""} Nur zur Selbstverbesserung — kein objektives Urteil.${planHint}`
+      : "Starte mit Frontal- und Profilfoto für deinen Baseline-Score.";
+  }
+
+  if (/plan|programm|routine|tag \d|woche|aufgabe/.test(lower)) {
+    return `${whyPrefix(ctx, "dein Programm")}Tag ${day}, Phase ${ctx.todayPlan?.phase ?? "Fundament"}. ${ctx.todayPlan?.weeklyGoal ?? focus}. ${tasksDone}/${tasksTotal} Aufgaben heute — ${tasksDone >= tasksTotal ? "perfekt!" : "nächste Aufgabe jetzt starten."}${planHint}`;
+  }
+
+  if (/schlaf|müde|wasser|hydrat|ernähr|protein|gesichtsübung|massage/.test(lower)) {
+    const optional = /gesichtsübung|massage|kaum/.test(lower);
+    if (optional) {
+      return `${whyPrefix(ctx, "optionale Gesichtstechniken")}Diese Techniken haben **begrenzte wissenschaftliche Evidenz** für strukturelle Gesichtsveränderungen. Sie können Entspannung und Gewohnheitsbewusstsein fördern — keine dauerhafte Knochenumformung. Evidenzbasierter: Schlaf, Hautpflege, Haltung, gesunde Körperzusammensetzung.${planHint}`;
+    }
+    return `${whyPrefix(ctx, "diese Grundlagen")}7–8h Schlaf, 2,5–3L Wasser, ausreichend Protein verbessern oft Haut und Gesichtsödeme schneller als isolierte Übungen. Serie: ${streak} Tage.${planHint}`;
+  }
+
+  return `${whyPrefix(ctx, "dein nächster Schritt")}ASCEND ${score ?? "—"} · Fokus: ${focus}. Stärke: ${strengths[0] ?? "deine Konstanz"}. Nächster Schritt: ${topTip(ctx)}. ${ctx.completedTasksTotal ?? 0} Aufgaben insgesamt erledigt, Serie ${streak} Tage. Frag mich zu Kiefer, Haut, Haltung, Training oder deinem Plan.${planHint}`;
 }
