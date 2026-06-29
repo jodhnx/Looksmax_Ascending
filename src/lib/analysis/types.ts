@@ -82,7 +82,10 @@ export interface AnalysisResult {
 
 export interface PlanDay {
   dayNumber: number;
+  weekNumber: number;
+  weekday: string;
   title: string;
+  focus: string;
   morningRoutine: string[];
   skincare: string[];
   exercises: string[];
@@ -97,6 +100,8 @@ export interface PlanDay {
   haircare?: string[];
   grooming?: string[];
   confidence?: string[];
+  lifestyle?: string[];
+  recovery?: string[];
 }
 
 export type PhotoSlotType = "FRONT_FACE" | "SIDE_PROFILE";

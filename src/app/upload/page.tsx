@@ -21,6 +21,7 @@ import {
   generateAscensionPlan,
   generateDailyTasks,
 } from "@/lib/analysis";
+import { de } from "@/lib/i18n/de";
 
 export default function UploadPage() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function UploadPage() {
 
   const handleAnalyze = async () => {
     if (!ready) {
-      toast.error("Both photos must pass validation");
+      toast.error(de.upload.bothRequired);
       return;
     }
 
@@ -99,10 +100,10 @@ export default function UploadPage() {
         };
       });
 
-      toast.success("ASCEND scan complete!");
+      toast.success(de.upload.scanComplete);
       router.push(`/analysis/${analysisId}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Analysis failed");
+      toast.error(err instanceof Error ? err.message : de.upload.scanFailed);
     } finally {
       setAnalyzing(false);
     }
@@ -117,14 +118,12 @@ export default function UploadPage() {
           href="/"
           className="mb-6 inline-flex items-center gap-1 text-sm text-white/50 hover:text-white/80"
         >
-          <ChevronLeft className="h-4 w-4" /> Back
+          <ChevronLeft className="h-4 w-4" /> {de.upload.back}
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Upload Photos</h1>
-          <p className="mt-2 text-sm leading-relaxed text-white/55">
-            Front face and side profile. MediaPipe validates one face, lighting, sharpness, and angle locally on your device.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-white">{de.upload.title}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-white/55">{de.upload.subtitle}</p>
         </motion.div>
 
         <PhotoUploader photos={photos} onPhotosChange={setPhotos} minPhotos={2} />
@@ -137,11 +136,11 @@ export default function UploadPage() {
         >
           {analyzing ? (
             <>
-              <Loader2 className="h-5 w-5 animate-spin" /> Running ASCEND scan...
+              <Loader2 className="h-5 w-5 animate-spin" /> {de.upload.scanning}
             </>
           ) : (
             <>
-              <Sparkles className="h-5 w-5" /> Start ASCEND Analysis
+              <Sparkles className="h-5 w-5" /> {de.upload.startScan}
             </>
           )}
         </Button>

@@ -11,13 +11,14 @@ import {
   BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { de } from "@/lib/i18n/de";
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { href: "/tasks", icon: CheckSquare, label: "Tasks" },
-  { href: "/progress", icon: TrendingUp, label: "Progress" },
-  { href: "/coach", icon: MessageCircle, label: "Coach" },
-  { href: "/stats", icon: BarChart3, label: "Stats" },
+  { href: "/dashboard", icon: LayoutDashboard, label: de.nav.home },
+  { href: "/tasks", icon: CheckSquare, label: de.nav.tasks },
+  { href: "/progress", icon: TrendingUp, label: de.nav.progress },
+  { href: "/coach", icon: MessageCircle, label: de.nav.coach },
+  { href: "/stats", icon: BarChart3, label: de.nav.stats },
 ];
 
 export function BottomNav() {

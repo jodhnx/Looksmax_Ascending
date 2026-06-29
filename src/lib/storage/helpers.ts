@@ -17,7 +17,8 @@ export function getDashboardFromStorage(data: AppData) {
 
   const weeklyImprovement =
     latestAnalysis && previousAnalysis
-      ? latestAnalysis.looksScore - previousAnalysis.looksScore
+      ? (latestAnalysis.ascendScore ?? latestAnalysis.looksScore) -
+        (previousAnalysis.ascendScore ?? previousAnalysis.looksScore)
       : 0;
 
   return {

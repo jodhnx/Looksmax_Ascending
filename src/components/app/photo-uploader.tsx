@@ -9,14 +9,16 @@ import { cn } from "@/lib/utils";
 import { validatePhoto } from "@/lib/analysis/validation";
 import type { PhotoSlotType } from "@/lib/analysis/types";
 
+import { de } from "@/lib/i18n/de";
+
 const PHOTO_LABELS: Record<PhotoSlotType, string> = {
-  FRONT_FACE: "Front Face",
-  SIDE_PROFILE: "Side Profile",
+  FRONT_FACE: de.photo.frontFace,
+  SIDE_PROFILE: de.photo.sideProfile,
 };
 
 const PHOTO_HINTS: Record<PhotoSlotType, string> = {
-  FRONT_FACE: "Look straight at camera, neutral expression",
-  SIDE_PROFILE: "Turn 90° — show jawline and neck clearly",
+  FRONT_FACE: de.photo.frontHint,
+  SIDE_PROFILE: de.photo.sideHint,
 };
 
 export type { PhotoSlotType };
@@ -61,7 +63,7 @@ export function PhotoUploader({
                     ...p,
                     uploading: false,
                     validated: false,
-                    errors: result.errors.length ? result.errors : ["Validation failed"],
+                    errors: result.errors.length ? result.errors : [de.errors.validationFailed],
                   }
                 : p
             )
@@ -88,7 +90,7 @@ export function PhotoUploader({
         onPhotosChange((prev) =>
           prev.map((p) =>
             p.type === type
-              ? { ...p, uploading: false, validated: false, errors: ["Validation failed"] }
+              ? { ...p, uploading: false, validated: false, errors: [de.errors.validationFailed] }
               : p
           )
         );
@@ -120,7 +122,7 @@ export function PhotoUploader({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-white/60">
-          {validatedCount} of {photos.length} photos validated
+          {validatedCount} von {photos.length} Fotos validiert
         </p>
         <div
           className={cn(
@@ -130,10 +132,10 @@ export function PhotoUploader({
         >
           {allValid ? (
             <>
-              <ShieldCheck className="h-3.5 w-3.5" /> Ready to scan
+              <ShieldCheck className="h-3.5 w-3.5" /> {de.upload.ready}
             </>
           ) : (
-            "Awaiting quality photos"
+            de.upload.awaiting
           )}
         </div>
       </div>
@@ -171,7 +173,7 @@ export function PhotoUploader({
                   className="flex h-full flex-col items-center justify-center gap-2 bg-white/5"
                 >
                   <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
-                  <span className="text-xs text-white/60">Detecting face mesh...</span>
+                  <span className="text-xs text-white/60">{de.photo.validating}</span>
                 </motion.div>
               ) : photo.url ? (
                 <motion.div
@@ -191,7 +193,7 @@ export function PhotoUploader({
                   <div className="absolute bottom-3 left-3 right-3">
                     <p className="text-xs font-semibold text-white">{PHOTO_LABELS[photo.type]}</p>
                     <div className="mt-1 flex items-center justify-between">
-                      <span className="text-[10px] text-white/70">Quality {photo.qualityScore}%</span>
+                      <span className="text-[10px] text-white/70">{de.photo.quality} {photo.qualityScore}%</span>
                       {photo.validated ? (
                         <CheckCircle className="h-4 w-4 text-emerald-400" />
                       ) : (

@@ -7,7 +7,7 @@ interface LoadingScreenProps {
   message?: string;
 }
 
-export function LoadingScreen({ message = "Analyzing..." }: LoadingScreenProps) {
+export function LoadingScreen({ message = "Analyse läuft…" }: LoadingScreenProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">
       <div className="absolute inset-0 bg-gradient-to-br from-violet-950/30 via-transparent to-indigo-950/25" />

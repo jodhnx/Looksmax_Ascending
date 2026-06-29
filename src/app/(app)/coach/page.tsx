@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { useStorage } from "@/hooks/use-storage";
 import { generateId } from "@/lib/storage";
 import { coachReply } from "@/lib/analysis/coach";
+import { getCurrentPlanDay, todayKey } from "@/lib/storage/helpers";
+import { de } from "@/lib/i18n/de";
 
 export default function CoachPage() {
   const { data, update } = useStorage();
@@ -17,6 +19,10 @@ export default function CoachPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const messages = data.messages;
   const latest = data.analyses[data.analyses.length - 1];
+  const previous = data.analyses.length > 1 ? data.analyses[data.analyses.length - 2] : undefined;
+  const today = todayKey();
+  const todayTasks = data.dailyTasks[today];
+  const planDay = getCurrentPlanDay(data);
 
   const send = () => {
     if (!input.trim()) return;
@@ -32,9 +38,14 @@ export default function CoachPage() {
 
     const reply = coachReply(content, {
       latestAnalysis: latest,
+      previousAnalysis: previous,
       streak: data.profile?.currentStreak ?? 0,
       completedTasksTotal: Object.values(data.dailyTasks).reduce((sum, d) => sum + d.completed, 0),
+      todayTasksCompleted: todayTasks?.completed ?? 0,
+      todayTasksTotal: todayTasks?.total ?? 0,
       goals: latest?.topImprovements,
+      progressChecks: data.progressChecks,
+      currentPlanDay: planDay,
     });
 
     update((prev) => ({
@@ -62,8 +73,8 @@ export default function CoachPage() {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white">ASCEND Coach</h1>
-            <p className="text-xs text-white/50">Local guidance from your scan data</p>
+            <h1 className="font-bold text-white">{de.coach.title}</h1>
+            <p className="text-xs text-white/50">{de.coach.subtitle}</p>
           </div>
         </div>
 
@@ -71,8 +82,10 @@ export default function CoachPage() {
           {messages.length === 0 && (
             <GlassCard className="text-center">
               <p className="text-sm leading-relaxed text-white/55">
-                Ask about jaw, skin, posture, sleep, workouts, or your 30-day plan.
-                {latest ? ` ASCEND Score: ${latest.ascendScore ?? latest.looksScore}.` : " Complete a scan first."}
+                {de.coach.empty}
+                {latest
+                  ? ` ${de.coach.scorePrefix} ${latest.ascendScore ?? latest.looksScore}.`
+                  : ` ${de.coach.completeScan}`}
               </p>
             </GlassCard>
           )}
@@ -99,7 +112,7 @@ export default function CoachPage() {
 
         <div className="flex gap-2 pt-2">
           <Input
-            placeholder="Ask your coach..."
+            placeholder={de.coach.placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}

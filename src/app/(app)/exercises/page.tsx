@@ -23,6 +23,7 @@ import {
   type ExerciseCategory,
 } from "@/lib/exercises/library";
 import { cn } from "@/lib/utils";
+import { de } from "@/lib/i18n/de";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dumbbell: Dumbbell,
@@ -51,14 +52,14 @@ export default function ExercisesPage() {
   return (
     <>
       <div className="px-6 py-8">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Exercise Library</h1>
-        <p className="text-sm text-white/50">Posture, neck, skin habits & more</p>
+        <h1 className="text-2xl font-bold tracking-tight text-white">{de.exercises.title}</h1>
+        <p className="text-sm text-white/50">{de.exercises.subtitle}</p>
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
           <FilterChip
             active={category === "all"}
             onClick={() => setCategory("all")}
-            label="All"
+            label={de.exercises.all}
           />
           {CATEGORIES.map((c) => (
             <FilterChip
@@ -93,16 +94,23 @@ export default function ExercisesPage() {
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-semibold text-white">{ex.name}</h3>
                         <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] capitalize text-white/60">
-                          {ex.difficulty}
+                          {de.tasks.difficulty[ex.difficulty]}
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-violet-300/80">
-                        {ex.durationMinutes} min · {CATEGORY_LABELS[ex.category]}
+                        {ex.durationMinutes} {de.tasks.minutes} · {CATEGORY_LABELS[ex.category]}
                       </p>
-                      <p className="mt-1 text-xs text-white/45">Reminder: {ex.reminder}</p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {de.exercises.reminder}: {ex.reminder}
+                      </p>
+                      <p className="mt-2 text-sm text-white/60">{ex.description}</p>
+                      <p className="mt-1 text-xs text-white/40">
+                        {de.exercises.target}: {ex.targetArea}
+                      </p>
                     </div>
                   </div>
                   <ol className="border-t border-white/10 bg-white/[0.02] px-5 py-4">
+                    <p className="mb-2 text-xs font-medium text-white/50">{de.exercises.steps}</p>
                     {ex.instructions.map((step, si) => (
                       <li key={step} className="flex gap-2 text-sm text-white/75">
                         <span className="font-medium text-violet-400">{si + 1}.</span>
@@ -110,6 +118,11 @@ export default function ExercisesPage() {
                       </li>
                     ))}
                   </ol>
+                  <div className="border-t border-white/10 bg-violet-500/5 px-5 py-3">
+                    <p className="text-center text-xs text-white/35">
+                      {de.exercises.animation} — {ex.name}
+                    </p>
+                  </div>
                 </GlassCard>
               </motion.div>
             );

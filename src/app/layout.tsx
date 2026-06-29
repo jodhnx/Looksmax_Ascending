@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ASCEND AI — Premium Looksmax & Ascension",
+  title: "ASCEND AI — Premium Looksmax & Selbstverbesserung",
   description:
-    "AI-powered facial analysis, personalized 30-day improvement plans, and progress tracking. Your self-improvement companion.",
+    "KI-gestützte Gesichtsanalyse, personalisierter 30-Tage-Plan und Fortschrittsverfolgung — dein Begleiter für sichtbare Verbesserung.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -39,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="de" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       >

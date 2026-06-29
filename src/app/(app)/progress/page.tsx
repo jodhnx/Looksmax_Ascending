@@ -19,6 +19,7 @@ import { daysSince } from "@/lib/plan-utils";
 import { todayKey } from "@/lib/storage/helpers";
 import { compareProgress } from "@/lib/analysis/progress";
 import { runFullAnalysis } from "@/lib/analysis/engine";
+import { de } from "@/lib/i18n/de";
 
 export default function ProgressPage() {
   const { data, update } = useStorage();
@@ -35,13 +36,13 @@ export default function ProgressPage() {
 
   const runComparison = async () => {
     if (validated.length < 2) {
-      toast.error("Both front and side photos must pass validation");
+      toast.error(de.progress.bothPhotos);
       return;
     }
 
     const baseline = data.analyses[0];
     if (!baseline) {
-      toast.error("Complete your first scan first");
+      toast.error(de.progress.needBaseline);
       return;
     }
 
@@ -52,7 +53,7 @@ export default function ProgressPage() {
     const newSide = validated.find((p) => p.type === "SIDE_PROFILE");
 
     if (!oldFront?.url || !oldSide?.url || !newFront?.url || !newSide?.url) {
-      toast.error("Missing comparison photos");
+      toast.error(de.progress.missingPhotos);
       return;
     }
 
@@ -126,20 +127,22 @@ export default function ProgressPage() {
 
       setShowUpload(false);
       setPhotos(ANALYSIS_PHOTO_SLOTS);
-      toast.success("7-day progress check complete!");
+      toast.success(de.progress.complete);
     } catch {
-      toast.error("Comparison failed");
+      toast.error(de.progress.failed);
     } finally {
       setComparing(false);
     }
   };
 
+  const daysLeft = Math.max(0, 7 - daysSinceLast);
+
   return (
     <>
       <div className="px-6 py-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Progress</h1>
-          <p className="text-sm text-white/50">Weekly scan comparisons & timeline</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white">{de.progress.title}</h1>
+          <p className="text-sm text-white/50">{de.progress.subtitle}</p>
         </motion.div>
 
         {canCheck ? (
@@ -147,8 +150,8 @@ export default function ProgressPage() {
             <div className="flex items-center gap-3">
               <Camera className="h-6 w-6 text-emerald-400" />
               <div>
-                <p className="font-medium text-white">7-day scan ready</p>
-                <p className="text-xs text-white/55">Upload new front & side photos</p>
+                <p className="font-medium text-white">{de.progress.scanReady}</p>
+                <p className="text-xs text-white/55">{de.progress.scanHint}</p>
               </div>
             </div>
             <Button
@@ -156,7 +159,7 @@ export default function ProgressPage() {
               size="sm"
               onClick={() => setShowUpload(!showUpload)}
             >
-              {showUpload ? "Hide upload" : "Start weekly scan"}
+              {showUpload ? de.progress.hideUpload : de.progress.startScan}
             </Button>
           </GlassCard>
         ) : (
@@ -164,8 +167,8 @@ export default function ProgressPage() {
             <div className="flex items-center gap-3 text-white/60">
               <Clock className="h-5 w-5" />
               <p className="text-sm">
-                Next scan in {Math.max(0, 7 - daysSinceLast)} day
-                {7 - daysSinceLast !== 1 ? "s" : ""}
+                {de.progress.nextScan} {daysLeft}{" "}
+                {daysLeft === 1 ? de.dashboard.day : de.dashboard.days}
               </p>
             </div>
           </GlassCard>
@@ -181,10 +184,10 @@ export default function ProgressPage() {
             >
               {comparing ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Comparing scans...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {de.progress.comparing}
                 </>
               ) : (
-                "Compare Progress"
+                de.progress.compare
               )}
             </Button>
           </GlassCard>
@@ -192,14 +195,12 @@ export default function ProgressPage() {
 
         <div className="mt-6 space-y-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-white/70">
-            <History className="h-4 w-4" /> Timeline
+            <History className="h-4 w-4" /> {de.progress.timeline}
           </h2>
 
           {checks.length === 0 ? (
             <GlassCard>
-              <p className="text-center text-sm text-white/50">
-                No progress checks yet. Complete your first scan, then return after 7 days.
-              </p>
+              <p className="text-center text-sm text-white/50">{de.progress.empty}</p>
             </GlassCard>
           ) : (
             checks.map((check, i) => (
@@ -212,9 +213,11 @@ export default function ProgressPage() {
                 <GlassCard>
                   <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-white">Week {check.weekNumber}</h3>
+                      <h3 className="font-semibold text-white">
+                        {de.progress.week} {check.weekNumber}
+                      </h3>
                       <p className="text-xs text-white/45">
-                        {new Date(check.createdAt).toLocaleDateString()}
+                        {new Date(check.createdAt).toLocaleDateString("de-DE")}
                       </p>
                     </div>
                     <span className="flex items-center gap-1 text-emerald-400">
@@ -224,7 +227,7 @@ export default function ProgressPage() {
 
                   {check.faceComparison?.before && check.faceComparison?.after && (
                     <div className="mb-3">
-                      <p className="mb-2 text-xs text-white/50">Front face</p>
+                      <p className="mb-2 text-xs text-white/50">{de.progress.front}</p>
                       <ComparisonSlider
                         beforeUrl={check.faceComparison.before}
                         afterUrl={check.faceComparison.after}
@@ -234,7 +237,7 @@ export default function ProgressPage() {
 
                   {check.sideComparison?.before && check.sideComparison?.after && (
                     <div className="mb-4">
-                      <p className="mb-2 text-xs text-white/50">Side profile</p>
+                      <p className="mb-2 text-xs text-white/50">{de.progress.side}</p>
                       <ComparisonSlider
                         beforeUrl={check.sideComparison.before}
                         afterUrl={check.sideComparison.after}
@@ -243,14 +246,16 @@ export default function ProgressPage() {
                   )}
 
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <Metric label="Skin" value={check.skinImprovement} />
-                    <Metric label="Jaw" value={check.jawImprovement} />
-                    <Metric label="Posture" value={check.postureImprovement ?? 0} />
-                    <Metric label="Harmony" value={check.harmonyImprovement ?? 0} />
+                    <Metric label={de.analysis.categoryLabels.skin} value={check.skinImprovement} />
+                    <Metric label={de.analysis.categoryLabels.jawDefinition} value={check.jawImprovement} />
+                    <Metric label={de.analysis.categoryLabels.posture} value={check.postureImprovement ?? 0} />
+                    <Metric label={de.analysis.categoryLabels.facialHarmony} value={check.harmonyImprovement ?? 0} />
                   </div>
 
                   {check.completedTasksImpact && (
-                    <p className="mt-3 text-xs text-violet-300/80">Habits: {check.completedTasksImpact}</p>
+                    <p className="mt-3 text-xs text-violet-300/80">
+                      {de.progress.habits}: {check.completedTasksImpact}
+                    </p>
                   )}
                   {check.notes && <p className="mt-2 text-sm text-white/65">{check.notes}</p>}
                 </GlassCard>

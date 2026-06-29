@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { de } from "@/lib/i18n/de";
 
 export function LandingPage() {
   return (
@@ -19,7 +20,7 @@ export function LandingPage() {
           animate={{ opacity: 1 }}
           className="text-center text-sm font-medium tracking-[0.3em] text-white/40 uppercase"
         >
-          100% Local · No Account
+          {de.landing.badge}
         </motion.p>
 
         <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
@@ -37,7 +38,7 @@ export function LandingPage() {
               <span className="gradient-text"> AI</span>
             </h1>
             <p className="mx-auto mt-4 max-w-xs text-base leading-relaxed text-white/55">
-              MediaPipe face mesh analysis, ASCEND Score, and your personalized 30-day plan — entirely on your device.
+              {de.landing.subtitle}
             </p>
           </motion.div>
 
@@ -48,28 +49,25 @@ export function LandingPage() {
             className="w-full max-w-sm space-y-4"
           >
             <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl text-left">
-              <Feature text="468-point face mesh analysis" />
-              <Feature text="ASCEND Score 0–100" />
-              <Feature text="30-day personalized plan" />
-              <Feature text="Weekly progress tracking" />
+              {de.landing.features.map((text) => (
+                <Feature key={text} text={text} />
+              ))}
             </div>
 
             <Button asChild size="lg" className="h-14 w-full rounded-2xl text-base shadow-lg shadow-violet-500/25">
               <Link href="/upload">
-                Start Analysis
+                {de.landing.startAnalysis}
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
 
             <Link href="/dashboard" className="block text-center text-sm text-white/40 hover:text-white/60">
-              Open dashboard
+              {de.landing.openDashboard}
             </Link>
           </motion.div>
         </div>
 
-        <p className="text-center text-[11px] text-white/30">
-          ASCEND Score is an estimate for self-improvement — not an objective rating.
-        </p>
+        <p className="text-center text-[11px] text-white/30">{de.landing.disclaimer}</p>
       </div>
     </div>
   );

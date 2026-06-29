@@ -1,10 +1,11 @@
 {
   "name": "ASCEND AI",
   "short_name": "ASCEND",
-  "description": "AI-powered looksmax and ascension companion",
-  "start_url": "/dashboard",
+  "description": "Dein persönlicher Looksmax-Begleiter mit Gesichtsanalyse und 30-Tage-Plan",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
+  "background_color": "#050508",
   "theme_color": "#0a0a0f",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "lang": "de"
 }

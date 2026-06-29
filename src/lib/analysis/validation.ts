@@ -15,6 +15,7 @@ import {
   sampleSkinTexture,
 } from "./image-utils";
 import { computeMetrics } from "./geometry";
+import { de } from "@/lib/i18n/de";
 
 const MIN_SHARPNESS = 35;
 const MIN_QUALITY = 65;
@@ -32,15 +33,9 @@ export async function validatePhoto(
     measureBrightness(url),
   ]);
 
-  if (sharpness < MIN_SHARPNESS) {
-    errors.push("Image is too blurry — hold steady and refocus");
-  }
-  if (brightness < 40) {
-    errors.push("Image too dark — use better lighting");
-  }
-  if (brightness > 230) {
-    errors.push("Image overexposed — reduce brightness");
-  }
+  if (sharpness < MIN_SHARPNESS) errors.push(de.errors.blurry);
+  if (brightness < 40) errors.push(de.errors.dark);
+  if (brightness > 230) errors.push(de.errors.bright);
 
   let qualityScore = 100;
   if (sharpness < MIN_SHARPNESS * 1.5) qualityScore -= 25;
@@ -48,7 +43,7 @@ export async function validatePhoto(
   qualityScore = Math.max(0, Math.min(100, qualityScore));
 
   if (qualityScore < MIN_QUALITY && errors.length === 0) {
-    errors.push("Image quality too low — retake with better lighting");
+    errors.push(de.errors.qualityLow);
   }
 
   let landmarks: Awaited<ReturnType<typeof detectLandmarks>>["landmarks"] = [];
@@ -66,13 +61,13 @@ export async function validatePhoto(
     pitch = pose.pitch;
     roll = pose.roll;
   } catch {
-    errors.push("Face detection failed — ensure your face is clearly visible");
+    errors.push(de.errors.noFace);
   }
 
   if (faceCount === 0) {
-    errors.push("No face detected — center your face in the frame");
+    errors.push(de.errors.noFace);
   } else if (faceCount > 1) {
-    errors.push("Multiple faces detected — only one person allowed");
+    errors.push(de.errors.multiFace);
   }
 
   if (landmarks.length > 0 && faceCount === 1) {
@@ -83,31 +78,23 @@ export async function validatePhoto(
     const forehead = getLandmark(landmarks, LM.forehead);
 
     if (chin.y < nose.y || forehead.y > nose.y) {
-      errors.push("Entire face must be visible in frame");
+      errors.push(de.errors.faceHidden);
     }
 
     const eyeOpen = Math.abs(leftEye.y - rightEye.y) < 0.08;
     if (!eyeOpen && slotType === "FRONT_FACE") {
-      errors.push("Eyes must be visible and open");
+      errors.push(de.errors.eyesHidden);
     }
 
     if (slotType === "FRONT_FACE") {
-      if (Math.abs(yaw) > 20) {
-        errors.push("Face must be front-facing — look straight at the camera");
-      }
-      if (Math.abs(roll) > 15) {
-        errors.push("Keep your head level — avoid tilting");
-      }
+      if (Math.abs(yaw) > 20) errors.push(de.errors.wrongAngleFront);
+      if (Math.abs(roll) > 15) errors.push(de.errors.headTilt);
     } else {
-      if (Math.abs(yaw) < 35) {
-        errors.push("Turn further to show your side profile (90° angle)");
-      }
+      if (Math.abs(yaw) < 35) errors.push(de.errors.wrongAngleSide);
     }
 
     const faceHeight = Math.abs(chin.y - forehead.y);
-    if (faceHeight < 0.25) {
-      errors.push("Move closer — face too small in frame");
-    }
+    if (faceHeight < 0.25) errors.push(de.errors.small);
   }
 
   const skinRegions =

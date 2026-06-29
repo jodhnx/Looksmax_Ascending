@@ -36,15 +36,15 @@ export async function compareProgress(
 
   const notes =
     scoreDelta >= 0
-      ? `ASCEND SCORE moved from ${before.ascendScore} to ${after.ascendScore}. Visible progress in tracked metrics.`
-      : `ASCEND SCORE shifted from ${before.ascendScore} to ${after.ascendScore}. Stay consistent — results compound over 30 days.`;
+      ? `ASCEND Score: ${before.ascendScore} → ${after.ascendScore} (+${Math.round(scoreDelta)}). Messbare Fortschritte in den verfolgten Metriken — weiter so!`
+      : `ASCEND Score: ${before.ascendScore} → ${after.ascendScore}. Bleib konsequent — Ergebnisse summieren sich über 30 Tage. Achte auf gleiche Foto-Bedingungen.`;
 
   const completedTasksImpact =
     completedTasks > 20
-      ? "Strong habit consistency likely supported your progress."
+      ? "Starke Gewohnheits-Konsistenz hat deinen Fortschritt wahrscheinlich unterstützt."
       : completedTasks > 10
-        ? "Moderate task completion — increasing consistency will accelerate results."
-        : "Low task completion — focus on daily checklist for better results.";
+        ? "Moderate Aufgaben-Erfüllung — mehr Konsistenz beschleunigt deine Ergebnisse."
+        : "Wenige erledigte Aufgaben — fokussiere dich auf die tägliche Checkliste.";
 
   return {
     improvementPercent,

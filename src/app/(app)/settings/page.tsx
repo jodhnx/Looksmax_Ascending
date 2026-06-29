@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useSettings } from "@/hooks/use-settings";
 import { useStorage } from "@/hooks/use-storage";
+import { de } from "@/lib/i18n/de";
 
 export default function SettingsPage() {
   const { data } = useStorage();
@@ -22,7 +23,7 @@ export default function SettingsPage() {
 
   const updatePref = (key: keyof typeof prefs, value: boolean) => {
     updateNotificationPrefs({ [key]: value });
-    toast.success("Preferences saved");
+    toast.success(de.settings.saved);
   };
 
   const exportData = () => {
@@ -35,54 +36,52 @@ export default function SettingsPage() {
     a.download = `ascend-ai-backup-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Data exported");
+    toast.success(de.settings.exported);
   };
 
   const clearData = async () => {
-    if (!confirm("Clear all local data? This cannot be undone.")) return;
+    if (!confirm(de.settings.clearConfirm)) return;
     await clearAllData();
     window.location.reload();
   };
 
   const reminders = [
-    { key: "morningReminder" as const, label: "Morning reminder" },
-    { key: "workoutReminder" as const, label: "Workout reminder" },
-    { key: "skincareReminder" as const, label: "Skincare reminder" },
-    { key: "waterReminder" as const, label: "Water reminder" },
-    { key: "sleepReminder" as const, label: "Sleep reminder" },
-    { key: "weeklyPhoto" as const, label: "Weekly photo reminder" },
+    { key: "morningReminder" as const, label: de.settings.reminders.morning },
+    { key: "workoutReminder" as const, label: de.settings.reminders.workout },
+    { key: "skincareReminder" as const, label: de.settings.reminders.skincare },
+    { key: "waterReminder" as const, label: de.settings.reminders.water },
+    { key: "sleepReminder" as const, label: de.settings.reminders.sleep },
+    { key: "weeklyPhoto" as const, label: de.settings.reminders.weeklyPhoto },
   ];
 
   return (
     <>
       <div className="px-6 py-8">
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="mt-1 text-sm text-white/60">
-          All data is stored locally on your device (IndexedDB)
-        </p>
+        <h1 className="text-2xl font-bold text-white">{de.settings.title}</h1>
+        <p className="mt-1 text-sm text-white/60">{de.settings.subtitle}</p>
 
         <GlassCard className="mt-6">
-          <h3 className="mb-4 font-semibold text-white">Appearance</h3>
+          <h3 className="mb-4 font-semibold text-white">{de.settings.appearance}</h3>
           <div className="flex gap-2">
             <Button
               variant={theme === "dark" ? "default" : "secondary"}
               size="sm"
               onClick={() => setTheme("dark")}
             >
-              Dark
+              {de.settings.dark}
             </Button>
             <Button
               variant={theme === "light" ? "default" : "secondary"}
               size="sm"
               onClick={() => setTheme("light")}
             >
-              Light
+              {de.settings.light}
             </Button>
           </div>
         </GlassCard>
 
         <GlassCard className="mt-4">
-          <h3 className="mb-4 font-semibold text-white">Notifications</h3>
+          <h3 className="mb-4 font-semibold text-white">{de.settings.notifications}</h3>
           <div className="space-y-4">
             {reminders.map((r) => (
               <div key={r.key} className="flex items-center justify-between">
@@ -100,18 +99,18 @@ export default function SettingsPage() {
         </GlassCard>
 
         <GlassCard className="mt-4">
-          <h3 className="mb-4 font-semibold text-white">Data</h3>
+          <h3 className="mb-4 font-semibold text-white">{de.settings.data}</h3>
           {lastBackupAt && (
             <p className="mb-3 text-xs text-white/50">
-              Last auto-backup: {new Date(lastBackupAt).toLocaleString()}
+              {de.settings.lastBackup}: {new Date(lastBackupAt).toLocaleString("de-DE")}
             </p>
           )}
           <div className="space-y-3">
             <Button variant="secondary" className="w-full" onClick={exportData}>
-              Export backup
+              {de.settings.export}
             </Button>
             <Button variant="destructive" className="w-full" onClick={clearData}>
-              Clear all local data
+              {de.settings.clear}
             </Button>
           </div>
         </GlassCard>

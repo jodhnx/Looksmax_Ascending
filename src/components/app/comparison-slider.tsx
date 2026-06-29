@@ -26,7 +26,7 @@ export function ComparisonSlider({
     >
       <Image
         src={afterUrl}
-        alt="After"
+        alt="Nachher"
         fill
         className="object-cover"
         unoptimized
@@ -38,7 +38,7 @@ export function ComparisonSlider({
         <div className="relative h-full w-[200%] max-w-none">
           <Image
             src={beforeUrl}
-            alt="Before"
+            alt="Vorher"
             fill
             className="object-cover"
             unoptimized
@@ -53,7 +53,7 @@ export function ComparisonSlider({
         value={position}
         onChange={(e) => setPosition(Number(e.target.value))}
         className="absolute inset-0 z-10 h-full w-full cursor-ew-resize opacity-0"
-        aria-label="Compare before and after"
+        aria-label="Vorher-Nachher-Vergleich"
       />
       <div
         className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-white shadow-lg"
@@ -64,10 +64,10 @@ export function ComparisonSlider({
         </div>
       </div>
       <div className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur-sm">
-        Before
+        Vorher
       </div>
       <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur-sm">
-        After
+        Nachher
       </div>
     </div>
   );

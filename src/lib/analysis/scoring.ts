@@ -4,47 +4,59 @@ import {
   computeConfidenceInterval,
   metricsToCategoryScores,
 } from "./geometry";
+import { getFocusAreaDE } from "@/lib/i18n/de";
 
 const STRENGTH_LABELS: Record<keyof CategoryScores, string> = {
-  facialHarmony: "Balanced facial proportions",
-  symmetry: "Good left-right facial symmetry",
-  jawDefinition: "Defined jaw contour",
-  chin: "Strong chin projection",
-  skin: "Healthy skin appearance",
-  posture: "Upright neck and head posture",
-  eyeArea: "Well-proportioned eye area",
-  hair: "Clean hairline presentation",
-  presentation: "Strong overall photo presentation",
+  facialHarmony: "Ausgewogene Gesichtsproportionen",
+  symmetry: "Gute Gesichtssymmetrie",
+  jawDefinition: "Definierte Kieferlinie",
+  chin: "Starke Kinnprojektion",
+  skin: "Gesunder Hautbild-Eindruck",
+  posture: "Aufrechte Nacken- und Kopfhaltung",
+  eyeArea: "Harmonische Augenpartie",
+  hair: "Gepflegte Haarlinie",
+  presentation: "Starke Foto-Präsentation",
 };
 
 const WEAKNESS_LABELS: Record<keyof CategoryScores, string> = {
-  facialHarmony: "Facial proportion balance",
-  symmetry: "Facial symmetry",
-  jawDefinition: "Jaw definition",
-  chin: "Chin projection",
-  skin: "Skin clarity and texture",
-  posture: "Neck posture and head position",
-  eyeArea: "Eye area balance",
-  hair: "Hairline and grooming",
-  presentation: "Photo quality and presentation",
+  facialHarmony: "Gesichtsproportionen",
+  symmetry: "Gesichtssymmetrie",
+  jawDefinition: "Kieferdefinition",
+  chin: "Kinnprojektion",
+  skin: "Hautbild & Textur",
+  posture: "Haltung & Forward Head",
+  eyeArea: "Augenpartie",
+  hair: "Haarlinie & Styling",
+  presentation: "Fotoqualität",
 };
 
 const IMPROVEMENT_TIPS: Record<keyof CategoryScores, string> = {
-  facialHarmony: "Focus on posture and body composition to support facial proportions",
-  symmetry: "Sleep on your back, chew evenly, and practice facial muscle balance exercises",
-  jawDefinition: "Reduce facial bloating, train neck/jaw muscles, maintain low body fat",
-  chin: "Practice chin tucks, mewing posture, and neck extension exercises",
-  skin: "Consistent AM/PM skincare, SPF daily, hydration, and quality sleep",
-  posture: "Chin tucks, wall angels, and upper-back strengthening 2x daily",
-  eyeArea: "Prioritize 7-8h sleep, cold compresses, and caffeine eye care",
-  hair: "Regular haircuts, scalp care, and clean hairline grooming",
-  presentation: "Use natural lighting and neutral backgrounds for progress photos",
+  facialHarmony:
+    "Haltung und Körperzusammensetzung verbessern die Gesichtsproportionen sichtbar",
+  symmetry:
+    "Auf dem Rücken schlafen, gleichmäßig kauen, Gesichtsmuskel-Balance üben",
+  jawDefinition:
+    "Gesichtsödeme reduzieren, Nacken-/Kiefertraining, Körperfett im Zielbereich halten",
+  chin: "Chin Tucks, korrekte Zungenhaltung, Nackenstreckübungen täglich",
+  skin: "Konsequente AM/PM-Hautpflege, SPF, Hydration und 7–8h Schlaf",
+  posture: "Chin Tucks, Wall Angels, Oberrücken 2× täglich kräftigen",
+  eyeArea: "7–8h Schlaf, kalte Kompressen, Augenpflege mit Koffein",
+  hair: "Regelmäßiger Haarschnitt, Kopfhautpflege, saubere Haarlinie",
+  presentation: "Natürliches Licht und neutraler Hintergrund für Fortschrittsfotos",
 };
+
+export function getWeakestCategory(categories: CategoryScores): keyof CategoryScores {
+  const sorted = (Object.entries(categories) as [keyof CategoryScores, number][]).sort(
+    ([, a], [, b]) => a - b
+  );
+  return sorted[0][0];
+}
 
 function buildInsights(categories: CategoryScores): {
   strengths: string[];
   weaknesses: string[];
   topImprovements: string[];
+  focusKey: keyof CategoryScores;
 } {
   const sorted = (Object.entries(categories) as [keyof CategoryScores, number][]).sort(
     ([, a], [, b]) => b - a
@@ -61,25 +73,24 @@ function buildInsights(categories: CategoryScores): {
     .reverse();
 
   const weaknesses = weak.map(([k]) => WEAKNESS_LABELS[k]);
-  const topImprovements = weak
-    .slice(0, 3)
-    .map(([k]) => IMPROVEMENT_TIPS[k]);
+  const topImprovements = weak.slice(0, 3).map(([k]) => IMPROVEMENT_TIPS[k]);
+  const focusKey = getWeakestCategory(categories);
 
   if (strengths.length === 0) {
-    strengths.push("Consistent baseline for measurable improvement");
+    strengths.push("Solide Basis für messbare Verbesserung");
   }
   if (weaknesses.length === 0) {
-    weaknesses.push("Fine-tuning habits for incremental gains");
+    weaknesses.push("Feintuning für inkrementelle Gewinne");
   }
   if (topImprovements.length === 0) {
     topImprovements.push(
-      "Maintain daily skincare and posture routine",
-      "Stay consistent with hydration and sleep",
-      "Track weekly progress photos"
+      "Tägliche Hautpflege und Haltungsroutine beibehalten",
+      "Hydration und Schlaf priorisieren",
+      "Wöchentliche Fortschrittsfotos dokumentieren"
     );
   }
 
-  return { strengths, weaknesses, topImprovements };
+  return { strengths, weaknesses, topImprovements, focusKey };
 }
 
 export function buildAnalysisResult(
@@ -101,7 +112,7 @@ export function buildAnalysisResult(
   const categories = metricsToCategoryScores(blended);
   const ascendScore = computeAscendScore(categories);
   const { low, high } = computeConfidenceInterval(ascendScore, blended.imageQuality);
-  const { strengths, weaknesses, topImprovements } = buildInsights(categories);
+  const { strengths, weaknesses, topImprovements, focusKey } = buildInsights(categories);
 
   const improvementPotential = clamp(
     Math.round(100 - ascendScore * 0.55 + categories.posture * 0.15 + categories.skin * 0.1)
@@ -131,7 +142,7 @@ export function buildAnalysisResult(
     strengths,
     weaknesses,
     topImprovements,
-    summary: `Your ASCEND SCORE is ${ascendScore} (estimate range ${low}–${high}). This is a self-improvement tracking estimate based on facial geometry and image analysis — not an objective attractiveness rating. Focus on your top improvement areas for the next 30 days.`,
+    summary: `Dein ASCEND Score liegt bei ${ascendScore} (Schätzbereich ${low}–${high}). Das ist eine Orientierung zur Selbstverbesserung basierend auf Gesichtsgeometrie — keine objektive Attraktivitätsbewertung. Fokus für die nächsten 30 Tage: ${getFocusAreaDE(focusKey)}.`,
   };
 }
 
